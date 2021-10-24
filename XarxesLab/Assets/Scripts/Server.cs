@@ -51,7 +51,7 @@ public class Server : MonoBehaviour
     {
         int recievedData;
         byte[] data = new byte[1024];
-        string input, stringData;
+        string input;
 
         IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 9050);
 

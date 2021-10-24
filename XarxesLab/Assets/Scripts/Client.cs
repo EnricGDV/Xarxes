@@ -82,7 +82,7 @@ public class Client : MonoBehaviour
         }
 
 
-        IPEndPoint sender = new IPEndPoint(IPAddress.Any, 9051);
+        IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
         EndPoint Remote = (EndPoint)sender;
 
 
@@ -103,7 +103,7 @@ public class Client : MonoBehaviour
 
         while (true)
         {
-            if(counter > 5)
+            if (counter > 5)
             {
                 break;
             }
