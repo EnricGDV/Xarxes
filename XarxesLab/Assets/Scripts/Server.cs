@@ -12,50 +12,109 @@ public class Server : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        myThread = new Thread(ThreadServer);
+        if (!myThread.IsAlive)
+        {
+            myThread.Start();
+        }
+        else if (myThread.IsAlive)
+        {
+            myThread.Abort();
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
-        myThread = new Thread(ThreadServer);
-        myThread.Start();
-
-        
-
+   
     }
-
+    public void OnApplicationQuit()
+    {
+        if (Application.isEditor)
+        {
+            // signal your threads to exit
+            if (myThread.IsAlive)
+            {
+                myThread.Abort();
+            }
+        }
+    }
+    public void OnDestroy()
+    {
+        // signal your threads to exit
+        if (myThread.IsAlive)
+        {
+            myThread.Abort();
+        }
+    }
     void ThreadServer()
     {
-        int recv;
+        int recievedData;
         byte[] data = new byte[1024];
+        string input, stringData;
+
         IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 9050);
 
-        Socket newsock = new Socket(AddressFamily.InterNetwork,
+        Socket newsocket = new Socket(AddressFamily.InterNetwork,
                          SocketType.Dgram, ProtocolType.Udp);
 
-        newsock.Bind(ipep);
-        Debug.Log("Waiting for a client...");
+        newsocket.Bind(ipep);
+
+        Debug.Log("Server: Waiting for a client...");
 
         IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
         EndPoint Remote = (EndPoint)(sender);
 
-        recv = newsock.ReceiveFrom(data, ref Remote);
 
-        Debug.Log("Message received from: " + Remote.ToString());
-        Debug.Log(Encoding.ASCII.GetString(data, 0, recv));
+        try
+        {
+            recievedData = newsocket.ReceiveFrom(data, ref Remote);//des de remote recibimos data y la guardamos
 
-        string welcome = "Welcome to my test server";
-        data = Encoding.ASCII.GetBytes(welcome);
-        newsock.SendTo(data, data.Length, SocketFlags.None, Remote);
+            Debug.Log("Server: Message received from: " + Remote.ToString());//remote es el cliente / sender
+            Debug.Log("Encoding.ASCII.GetString(data, 0, recievedData) = " + Encoding.ASCII.GetString(data, 0, recievedData));//vemos q tenemos dentro
+            
+        }
+        catch (System.Exception e)
+        {
+            Debug.Log("Server: Server failed.. trying again...");
+            Debug.Log(e);
+        }
+
+
+        try
+        {
+            string welcome = "Server: Welcome to my test server";
+            data = Encoding.ASCII.GetBytes(welcome);
+            newsocket.SendTo(data, data.Length, SocketFlags.None, Remote);
+        }
+        catch (System.Exception e)
+        {
+            Debug.Log("Server: error with sending welcome string");
+            Debug.Log(e);
+        }
+
+        
+    
 
         while (true)
         {
+            input ="pong";
             data = new byte[1024];
-            recv = newsock.ReceiveFrom(data, ref Remote);
+            recievedData = newsocket.ReceiveFrom(data, ref Remote);
 
-            Debug.Log(Encoding.ASCII.GetString(data, 0, recv));
-            newsock.SendTo(data, recv, SocketFlags.None, Remote);
+            Debug.Log("Server: recieved data:"+Encoding.ASCII.GetString(data, 0, recievedData));
+
+
+            if (data.Length > 0)
+            {
+                data = Encoding.ASCII.GetBytes(input);
+            }
+
+
+            newsocket.SendTo(data, recievedData, SocketFlags.None, Remote);
+
+         
         }
+       
     }
 }
