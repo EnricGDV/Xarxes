@@ -5,23 +5,25 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 
-enum state
-{
-    none,
-    send,
-    await,
-    shutDown
-}
 
 public class CustomClient : MonoBehaviour
 {
+
+    enum state
+    {
+        none,
+        send,
+        await,
+        shutDown
+    }
+
     private byte[] data;
     private Thread waitThread;
     private IPEndPoint ipep;
     private Socket server;
     private state clientState;
     private int count = 0;
-
+    private bool waitThreadCreated;
     // Start is called before the first frame update
     void Start()
     {
@@ -33,6 +35,7 @@ public class CustomClient : MonoBehaviour
 
         server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
+        waitThreadCreated = false;
     }
 
 
@@ -51,8 +54,20 @@ public class CustomClient : MonoBehaviour
                 SendPing();
                 break;
             case state.await:
-                waitThread = new Thread(WaitThread);
-                waitThread.Start();
+                if (!waitThreadCreated)
+                {
+                    waitThread = new Thread(WaitThread);
+                    waitThread.Start();
+                    waitThreadCreated = true;
+                }
+                else if(waitThreadCreated)
+                {
+                    //Debug.LogWarning("Client: thread is living la vida loca");
+                }
+               
+                    
+              
+                
                 break;
             case state.shutDown:
                 if (waitThread.IsAlive)
@@ -74,7 +89,7 @@ public class CustomClient : MonoBehaviour
 
     void WaitThread()
     {
-        Debug.LogWarning("Starting client trhead, waiting for pong!");
+        //Debug.LogWarning("Starting client trhead, waiting for pong!");
 
         data = new byte[1024];
 
@@ -84,9 +99,10 @@ public class CustomClient : MonoBehaviour
             EndPoint Remote = (EndPoint)sender;
             int recv = server.ReceiveFrom(data, ref Remote);
             string stringData = Encoding.ASCII.GetString(data, 0, recv);
-            Debug.Log("Client: received data is:" + stringData);
+            //Debug.Log("Client: received data is:" + stringData);
             if (stringData == "pong")
             {
+                Debug.Log("Server sent:    PONG");
                 Thread.Sleep(500);
                 clientState = state.send;
                 count++;
@@ -98,5 +114,6 @@ public class CustomClient : MonoBehaviour
             Debug.Log(e);
         }
         Debug.Log("Stopping client, pong received!");
+        waitThreadCreated = false;
     }
 }
