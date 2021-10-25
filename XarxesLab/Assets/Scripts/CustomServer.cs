@@ -393,7 +393,7 @@ public class CustomServer : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.Log("Server: listening failed.. client not connected trying again...");
+            Debug.Log("Server: Trying to look for clients");
             Debug.Log(e);
         }
         serverState = stateTCP.await;
