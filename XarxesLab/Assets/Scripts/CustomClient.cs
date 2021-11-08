@@ -22,7 +22,10 @@ public class CustomClient : MonoBehaviour
     {
         string name;
         string text;
+
+        public message(string nme, string txt) { name = nme; text = txt; }
     }
+    
 
     private byte[] data;
     private Thread connectThread;
@@ -34,6 +37,7 @@ public class CustomClient : MonoBehaviour
     private bool waitThreadCreated;
     private bool connectThreadCreated;
     private message[] messages;
+    private GameObject[] panels;
 
     public GameObject chat;
     public GameObject receivedmsg;
@@ -54,6 +58,9 @@ public class CustomClient : MonoBehaviour
         connectThreadCreated = false;
 
         count = 0;
+
+        messages = new message[1];
+        panels = new GameObject[1];
     }
 
 
@@ -81,6 +88,7 @@ public class CustomClient : MonoBehaviour
             case stateTCP.await:
                 if (!waitThreadCreated)
                 {
+                    SpawnMessage("Server", "PONG", false);
                     waitThread = new Thread(WaitThread);
                     waitThread.Start();
                     waitThreadCreated = true;
@@ -105,6 +113,7 @@ public class CustomClient : MonoBehaviour
     void SendPing()
     {
         server.Send(Encoding.ASCII.GetBytes("ping"));
+        SpawnMessage("Client", "PING", true);
         clientState = stateTCP.await;
     }
 
@@ -156,23 +165,47 @@ public class CustomClient : MonoBehaviour
 
     void MoveMessages()
     {
-        for(int i = 1; i>=messages.Length; i++)
+        if (messages.Length < 10)
         {
-            messages[i] = messages[i - 1];
+            messages = new message[messages.Length + 1];
         }
 
-        chat.transform.position += new Vector3(0, 13, 0);
+        if(messages.Length > 1)
+        {
+            for (int i = 1; i < messages.Length; i++)
+            {
+                messages[i] = messages[i - 1];
+                panels[i] = panels[i - 1];
+                panels[i].GetComponent<RectTransform>().SetInsetAndSizeFromParentEdge(RectTransform.Edge.Bottom, 0, panels[i].GetComponent<RectTransform>().rect.height);
+            }
+        }
+        
     }
 
     void SpawnMessage(string name, string text, bool isSender)
     {
         MoveMessages();
-        //message latestMessage = new message { name, text };
-        //messages[0] = latestMessage;
-        //if (!isSender)
-        //{
-        //    Instantiate(receivedmsg);
-        //    receivedmsg.GetComponentInChildren<Text>
-        //}
+        
+        if (!isSender)
+        {
+            GameObject go = Instantiate(receivedmsg) as GameObject;
+            go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
+            go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
+            go.transform.SetParent(chat.transform, false);
+            panels[0] = go;
+        }
+        else if (isSender)
+        {
+            GameObject go = Instantiate(sentmsg) as GameObject;
+            go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
+            go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
+            go.transform.SetParent(chat.transform, false);
+            panels[0] = go;
+        }
+        
+
+
+        message latestMessage = new message (name, text);
+        messages[0] = latestMessage;
     }
 }

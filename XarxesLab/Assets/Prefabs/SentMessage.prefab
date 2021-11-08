@@ -90,6 +90,7 @@ GameObject:
   - component: {fileID: 9048610240880519345}
   - component: {fileID: 8512467678361675197}
   - component: {fileID: 5166496799996005776}
+  - component: {fileID: 2392997948616947635}
   m_Layer: 5
   m_Name: SentMessage
   m_TagString: Untagged
@@ -115,7 +116,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.31, y: 0.15}
   m_AnchorMax: {x: 1, y: 0.27}
-  m_AnchoredPosition: {x: -0.083106935, y: -3.7434506}
+  m_AnchoredPosition: {x: -0.083099365, y: -3.7434387}
   m_SizeDelta: {x: 37.252533, y: 11.210642}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8512467678361675197
@@ -156,6 +157,20 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2392997948616947635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3164450261110998101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f802a045a1fe0f4d8e758c6246246cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  childname: {fileID: 347020793815584952}
+  childtext: {fileID: 5006293651151948207}
 --- !u!1 &5006293651151948207
 GameObject:
   m_ObjectHideFlags: 0

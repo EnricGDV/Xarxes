@@ -871,9 +871,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b89c95994c94e514cb1780a0dc8a41d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  chat: {fileID: 0}
-  receivedmsg: {fileID: 0}
-  sentmsg: {fileID: 0}
+  chat: {fileID: 1119075102}
+  receivedmsg: {fileID: 4428894664726065951, guid: 2c40a38890004824d8e6f6b86c9bae4b, type: 3}
+  sentmsg: {fileID: 3164450261110998101, guid: 6ac643696553a6346acb313ab6d01e2f, type: 3}
 --- !u!1 &1812579629
 GameObject:
   m_ObjectHideFlags: 0
