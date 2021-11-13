@@ -13,8 +13,7 @@ public class CustomClient : MonoBehaviour
     {
         none,
         connect,
-        send,
-        await,
+        send_and_await,
         shutDown
     }
 
@@ -25,7 +24,10 @@ public class CustomClient : MonoBehaviour
 
         public message(string nme, string txt) { name = nme; text = txt; }
     }
-    
+
+    private string clientWrittenMessage = "SEEEE";
+    private string clientReceivedMessage;
+    private bool MessageWritten;
 
     private byte[] data;
     private Thread connectThread;
@@ -56,7 +58,7 @@ public class CustomClient : MonoBehaviour
 
         waitThreadCreated = false;
         connectThreadCreated = false;
-
+        MessageWritten = false;//we start with no messages written from client
         count = 0;
 
         messages = new message[1];
@@ -70,37 +72,51 @@ public class CustomClient : MonoBehaviour
         if (count >= 5 && clientState != stateTCP.none)
             clientState = stateTCP.shutDown;
 
+        //get input to write the message
+
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            if (clientWrittenMessage != null)
+            {
+                MessageWritten = true;
+            }
+            else
+            {
+                MessageWritten = false;
+            }
+        }
+
         switch (clientState)
         {
             case stateTCP.none:
                 break;
             case stateTCP.connect:
                 if (!connectThreadCreated)
-                {
+                {  
                     connectThread = new Thread(ConnectThread);
                     connectThread.Start();
                 }
 
                 break;
-            case stateTCP.send:
-                SendPing();
-                break;
-            case stateTCP.await:
+            case stateTCP.send_and_await:
                 if (!waitThreadCreated)
                 {
-                    SpawnMessage("Server", "PONG", false);
                     waitThread = new Thread(WaitThread);
                     waitThread.Start();
                     waitThreadCreated = true;
                 }
-                else if (waitThreadCreated)
+                if (MessageWritten)
                 {
-                    //Debug.LogWarning("Client: thread is living la vida loca");
+                    //send message to the server
+                    server.Send(Encoding.ASCII.GetBytes(clientWrittenMessage));
+                    SpawnMessage("Client", clientWrittenMessage, true);
+                    clientWrittenMessage = null;
+                    MessageWritten = false;
                 }
                 break;
             case stateTCP.shutDown:
                 if (waitThread.IsAlive)
-                    Debug.Log("Thread is Alive! Can't Shut Down!!!");
+                       Debug.Log("Thread is Alive! Can't Shut Down!!!");
                 Debug.Log("Stopping server from CustomClient.cs");
                 clientState = stateTCP.none;
                 server.Close();
@@ -110,39 +126,20 @@ public class CustomClient : MonoBehaviour
     }
 
 
-    void SendPing()
-    {
-        server.Send(Encoding.ASCII.GetBytes("ping"));
-        SpawnMessage("Client", "PING", true);
-        clientState = stateTCP.await;
-    }
-
     void WaitThread()
     {
-        //Debug.LogWarning("Starting client trhead, waiting for pong!");
-
-
-
         try
         {
             int recv = server.Receive(data);
             string stringData = Encoding.ASCII.GetString(data, 0, recv);
-
-            //Debug.Log("Client: received data is:" + stringData);
-            if (stringData == "pong")
-            {
-                Debug.Log("Server sent:    PONG");
-                Thread.Sleep(500);
-                clientState = stateTCP.send;
-                count++;
-            }
+            clientReceivedMessage = stringData;
         }
         catch (System.Exception e)
         {
             Debug.Log("Client: Connection failed.. trying again...");
             Debug.Log(e);
         }
-
+        
         waitThreadCreated = false;
     }
 
@@ -160,52 +157,53 @@ public class CustomClient : MonoBehaviour
             Debug.Log(e);
             return;
         }
-        clientState = stateTCP.send;
+        clientState = stateTCP.send_and_await;
+        
     }
 
     void MoveMessages()
     {
-        if (messages.Length < 10)
-        {
-            messages = new message[messages.Length + 1];
-        }
+        //if (messages.Length < 10)
+        //{
+        //    messages = new message[messages.Length + 1];
+        //}
 
-        if(messages.Length > 1)
-        {
-            for (int i = 1; i < messages.Length; i++)
-            {
-                messages[i] = messages[i - 1];
-                panels[i] = panels[i - 1];
-                panels[i].GetComponent<RectTransform>().SetInsetAndSizeFromParentEdge(RectTransform.Edge.Bottom, 0, panels[i].GetComponent<RectTransform>().rect.height);
-            }
-        }
+        //if(messages.Length > 1)
+        //{
+        //    for (int i = 1; i < messages.Length; i++)
+        //    {
+        //        messages[i] = messages[i - 1];
+        //        panels[i] = panels[i - 1];
+        //        panels[i].GetComponent<RectTransform>().SetInsetAndSizeFromParentEdge(RectTransform.Edge.Bottom, 0, panels[i].GetComponent<RectTransform>().rect.height);
+        //    }
+        //}
         
     }
 
     void SpawnMessage(string name, string text, bool isSender)
     {
-        MoveMessages();
-        
-        if (!isSender)
-        {
-            GameObject go = Instantiate(receivedmsg) as GameObject;
-            go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
-            go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
-            go.transform.SetParent(chat.transform, false);
-            panels[0] = go;
-        }
-        else if (isSender)
-        {
-            GameObject go = Instantiate(sentmsg) as GameObject;
-            go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
-            go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
-            go.transform.SetParent(chat.transform, false);
-            panels[0] = go;
-        }
-        
+        //MoveMessages();
+
+        //if (!isSender)
+        //{
+        //    GameObject go = Instantiate(receivedmsg) as GameObject;
+        //    go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
+        //    go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
+        //    go.transform.SetParent(chat.transform, false);
+        //    panels[0] = go;
+        //}
+        //else if (isSender)
+        //{
+        //    GameObject go = Instantiate(sentmsg) as GameObject;
+        //    go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
+        //    go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
+        //    go.transform.SetParent(chat.transform, false);
+        //    panels[0] = go;
+        //}
 
 
-        message latestMessage = new message (name, text);
-        messages[0] = latestMessage;
+
+        //message latestMessage = new message(name, text);
+        //messages[0] = latestMessage;
     }
 }
