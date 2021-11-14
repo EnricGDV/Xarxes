@@ -6,6 +6,11 @@ using System.Text;
 using System.Threading;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+<<<<<<< Updated upstream
+=======
+using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+>>>>>>> Stashed changes
 
 public class CustomClient : MonoBehaviour
 {
@@ -19,8 +24,8 @@ public class CustomClient : MonoBehaviour
 
     struct message
     {
-        string name;
-        string text;
+        public string name;
+        public string text;
 
         public message(string nme, string txt) { name = nme; text = txt; }
     }
@@ -44,6 +49,13 @@ public class CustomClient : MonoBehaviour
     public GameObject chat;
     public GameObject receivedmsg;
     public GameObject sentmsg;
+<<<<<<< Updated upstream
+=======
+    public GameObject inputfield;
+    public int clientnum;
+    private bool messagewritten;
+    private string clientReceivedMessage;
+>>>>>>> Stashed changes
 
     // Start is called before the first frame update
     void Start()
@@ -61,17 +73,26 @@ public class CustomClient : MonoBehaviour
         MessageWritten = false;//we start with no messages written from client
         count = 0;
 
+<<<<<<< Updated upstream
         messages = new message[1];
         panels = new GameObject[1];
+=======
+        clientnum = SceneManager.sceneCount - 1;
+        messages = new List<message>();
+        panels = new List<GameObject>();
+        messagewritten = false;
+        this.name = "client" + clientnum;
+>>>>>>> Stashed changes
     }
 
 
     // Update is called once per frame
     void Update()
     {
-        if (count >= 5 && clientState != stateTCP.none)
-            clientState = stateTCP.shutDown;
+        //if (count >= 5 && clientState != stateTCP.none)
+        //    clientState = stateTCP.shutDown;
 
+<<<<<<< Updated upstream
         //get input to write the message
 
         if (Input.GetKeyDown(KeyCode.Return))
@@ -84,6 +105,18 @@ public class CustomClient : MonoBehaviour
             {
                 MessageWritten = false;
             }
+=======
+        if(Input.GetKeyDown(KeyCode.Return))
+        {
+            WriteMessage(inputfield.GetComponent<InputField>().text);
+            messagewritten = true;
+        }
+
+        if(clientReceivedMessage != null)
+        {
+            SpawnMessage("OtherClient", clientReceivedMessage, false);
+            clientReceivedMessage = null;
+>>>>>>> Stashed changes
         }
 
         switch (clientState)
@@ -105,6 +138,7 @@ public class CustomClient : MonoBehaviour
                     waitThread.Start();
                     waitThreadCreated = true;
                 }
+<<<<<<< Updated upstream
                 if (MessageWritten)
                 {
                     //send message to the server
@@ -112,6 +146,13 @@ public class CustomClient : MonoBehaviour
                     SpawnMessage("Client", clientWrittenMessage, true);
                     clientWrittenMessage = null;
                     MessageWritten = false;
+=======
+                if (messagewritten)
+                {
+                    //send message to the server
+                    server.Send(Encoding.ASCII.GetBytes(messages[messages.Count-1].text));
+                    messagewritten = false;
+>>>>>>> Stashed changes
                 }
                 break;
             case stateTCP.shutDown:
@@ -125,15 +166,23 @@ public class CustomClient : MonoBehaviour
 
     }
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     void WaitThread()
     {
         try
         {
             int recv = server.Receive(data);
             string stringData = Encoding.ASCII.GetString(data, 0, recv);
+<<<<<<< Updated upstream
             clientReceivedMessage = stringData;
             Debug.Log("message from server: " + clientReceivedMessage);
+=======
+
+            clientReceivedMessage = stringData;
+>>>>>>> Stashed changes
         }
         catch (System.Exception e)
         {
@@ -159,11 +208,15 @@ public class CustomClient : MonoBehaviour
             return;
         }
         clientState = stateTCP.send_and_await;
+<<<<<<< Updated upstream
         
+=======
+>>>>>>> Stashed changes
     }
 
     void MoveMessages()
     {
+<<<<<<< Updated upstream
         //if (messages.Length < 10)
         //{
         //    messages = new message[messages.Length + 1];
@@ -178,11 +231,48 @@ public class CustomClient : MonoBehaviour
         //        panels[i].GetComponent<RectTransform>().SetInsetAndSizeFromParentEdge(RectTransform.Edge.Bottom, 0, panels[i].GetComponent<RectTransform>().rect.height);
         //    }
         //}
+=======
+        for (int i = 0; i < messages.Count; i++)
+        {
+            panels[i].GetComponent<RectTransform>().anchoredPosition
+                = new Vector2(panels[i].GetComponent<RectTransform>().anchoredPosition.x, panels[i].GetComponent<RectTransform>().anchoredPosition.y + 15);
+        }
+    }
+
+    public void SpawnMessage(string name, string text, bool isSender)
+    {
+        if (messages.Count > 0)
+            MoveMessages();
+        
+        if (!isSender)
+        {
+            GameObject go = Instantiate(receivedmsg, chat.transform) as GameObject;
+            go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
+            go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
+            go.GetComponent<RectTransform>().anchoredPosition
+                    = new Vector2(go.GetComponent<RectTransform>().anchoredPosition.x, go.GetComponent<RectTransform>().anchoredPosition.y - 500);
+            panels.Add(go);
+        }
+        else if (isSender)
+        {
+            GameObject go = Instantiate(sentmsg, chat.transform) as GameObject;
+            go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
+            go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
+            go.GetComponent<RectTransform>().anchoredPosition
+                    = new Vector2(go.GetComponent<RectTransform>().anchoredPosition.x, go.GetComponent<RectTransform>().anchoredPosition.y - 500);
+            panels.Add(go);
+        }
+        
+
+        message latestMessage = new message (name, text);
+        messages.Add(latestMessage);
+>>>>>>> Stashed changes
         
     }
 
     void SpawnMessage(string name, string text, bool isSender)
     {
+<<<<<<< Updated upstream
         //MoveMessages();
 
         //if (!isSender)
@@ -206,5 +296,8 @@ public class CustomClient : MonoBehaviour
 
         //message latestMessage = new message(name, text);
         //messages[0] = latestMessage;
+=======
+        SpawnMessage(this.name, txt, true);
+>>>>>>> Stashed changes
     }
 }

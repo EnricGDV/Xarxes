@@ -1,6 +1,4 @@
-﻿#define TCP_B
-
-using UnityEngine;
+﻿using UnityEngine;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -18,8 +16,13 @@ class Client
     public string name;
     public Socket client_socket;
 }
+<<<<<<< Updated upstream
 
 
+=======
+
+
+>>>>>>> Stashed changes
 public class CustomServer : MonoBehaviour
 {
 
@@ -68,9 +71,15 @@ public class CustomServer : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+<<<<<<< Updated upstream
         if(messageFromClient != null)
+=======
+
+        switch (serverState)
+>>>>>>> Stashed changes
         {
 
+<<<<<<< Updated upstream
         }
 
         switch (serverState)
@@ -78,9 +87,39 @@ public class CustomServer : MonoBehaviour
             case stateTCP.none:
                 break;
             case stateTCP.listen:
-
+=======
                 if (!listenThreadCreated)
                 {
+                    listenThread = new Thread(ListenThread);
+                    listenThread.Start();
+                    listenThreadCreated = true;
+                }
+                break;
+            case stateTCP.await:
+                if (!waitThreadCreated)
+                {
+                    waitThread = new Thread(WaitThread);
+                    waitThread.Start();
+                    waitThreadCreated = true;
+                }
+                break;
+            case stateTCP.send:
+                if (newClientConnected)
+                {
+                    int elements = clients_list.Count;
+                    clients_list[elements-1].client_socket.Send(Encoding.ASCII.GetBytes("connection succed, welcome to the Chat Room"));                   
+                    newClientConnected = false;
+                    serverState = stateTCP.await;
+                }
+                break;
+            case stateTCP.shutDown:
+                if (waitThread.IsAlive)
+                    Debug.Log("Thread is Alive! Can't Shut Down!!!");
+>>>>>>> Stashed changes
+
+                for(int i = 0; i < clients_list.Count; i++)
+                {
+<<<<<<< Updated upstream
                     listenThread = new Thread(ListenThread);
                     listenThread.Start();
                     listenThreadCreated = true;
@@ -109,6 +148,8 @@ public class CustomServer : MonoBehaviour
 
                 for(int i = 0; i < clients_list.Count; i++)
                 {
+=======
+>>>>>>> Stashed changes
                     clients_list.RemoveAt(i);
                 }
 
@@ -155,10 +196,16 @@ public class CustomServer : MonoBehaviour
             newClient = new Client();
             newClient.client_socket = newsocket.Accept();
             newClient.clientep = (IPEndPoint)newClient.client_socket.RemoteEndPoint;
+<<<<<<< Updated upstream
             
             clients_list.Add(newClient);
             
             //TODO: SEND MESSAGE OF CONECTION SUCCESS TO THE CLIENT
+=======
+            newClient.name = "client" + clients_list.Count + 1;
+
+            clients_list.Add(newClient);
+>>>>>>> Stashed changes
         }
         catch (System.Exception e)
         {
@@ -170,7 +217,10 @@ public class CustomServer : MonoBehaviour
     }
 
 }
+<<<<<<< Updated upstream
 
 
 
 
+=======
+>>>>>>> Stashed changes
