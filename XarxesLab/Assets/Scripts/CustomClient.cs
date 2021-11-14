@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using System.Collections.Generic;
 
 public class CustomClient : MonoBehaviour
 {
@@ -36,15 +37,15 @@ public class CustomClient : MonoBehaviour
     private int count;
     private bool waitThreadCreated;
     private bool connectThreadCreated;
-    private message[] messages;
-    private GameObject[] panels;
+    private List<message> messages;
+    private List<GameObject> panels;
 
     public GameObject chat;
+    public GameObject content;
     public GameObject receivedmsg;
     public GameObject sentmsg;
     public GameObject inputfield;
-    private int messagenum;
-    private int maxMessages = 8;
+    private bool messagewritten;
 
     // Start is called before the first frame update
     void Start()
@@ -62,9 +63,9 @@ public class CustomClient : MonoBehaviour
 
         count = 0;
 
-        messages = new message[maxMessages];
-        panels = new GameObject[maxMessages];
-        messagenum = 0;
+        messages = new List<message>();
+        panels = new List<GameObject>();
+        messagewritten = false;
     }
 
 
@@ -74,7 +75,11 @@ public class CustomClient : MonoBehaviour
         if (count >= 5 && clientState != stateTCP.none)
             clientState = stateTCP.shutDown;
 
-        inputfield.GetComponent<InputField>().onEndEdit.AddListener(WriteMessage);
+        if(!messagewritten)
+        {
+            messagewritten = true;
+            inputfield.GetComponent<InputField>().onEndEdit.AddListener(WriteMessage);
+        }
 
         switch (clientState)
         {
@@ -171,34 +176,14 @@ public class CustomClient : MonoBehaviour
 
     void MoveMessages()
     {
-        if(messagenum < maxMessages)
+        if(messages.Count > 0)
         {
-            for (int i = 1; i <= messagenum; i++)
+            for (int i = 0; i < messages.Count; i++)
             {
-                messages[i] = messages[i - 1];
-                panels[i] = panels[i - 1];
-                panels[i].GetComponent<RectTransform>().anchoredPosition 
-                    = new Vector2(panels[i].GetComponent<RectTransform>().anchoredPosition.x, panels[i].GetComponent<RectTransform>().anchoredPosition.y + 15);
-
-            }
-        }
-        else
-        {
-            for (int i = 1; i < messages.Length; i++)
-            {
-                messages[i] = messages[i - 1];
-                if(i >= maxMessages - 1)
-                {
-                    panels[i].SetActive(false);
-                }
-                panels[i] = panels[i - 1];
                 panels[i].GetComponent<RectTransform>().anchoredPosition
                     = new Vector2(panels[i].GetComponent<RectTransform>().anchoredPosition.x, panels[i].GetComponent<RectTransform>().anchoredPosition.y + 15);
-
             }
-            
         }
-
     }
 
     public void SpawnMessage(string name, string text, bool isSender)
@@ -211,8 +196,8 @@ public class CustomClient : MonoBehaviour
             go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
             go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
             go.GetComponent<RectTransform>().anchoredPosition
-                    = new Vector2(go.GetComponent<RectTransform>().anchoredPosition.x, go.GetComponent<RectTransform>().anchoredPosition.y - 35);
-            panels[0] = go;
+                    = new Vector2(go.GetComponent<RectTransform>().anchoredPosition.x, go.GetComponent<RectTransform>().anchoredPosition.y - 500);
+            panels.Add(go);
         }
         else if (isSender)
         {
@@ -220,15 +205,14 @@ public class CustomClient : MonoBehaviour
             go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
             go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
             go.GetComponent<RectTransform>().anchoredPosition
-                    = new Vector2(go.GetComponent<RectTransform>().anchoredPosition.x, go.GetComponent<RectTransform>().anchoredPosition.y - 35);
-            panels[0] = go;
+                    = new Vector2(go.GetComponent<RectTransform>().anchoredPosition.x, go.GetComponent<RectTransform>().anchoredPosition.y - 500);
+            panels.Add(go);
         }
         
 
         message latestMessage = new message (name, text);
-        messages[0] = latestMessage;
+        messages.Add(latestMessage);
         
-        messagenum++;
     }
 
     void WriteMessage(string txt)

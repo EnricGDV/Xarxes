@@ -514,8 +514,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 97697928}
   m_HandleRect: {fileID: 97697927}
   m_Direction: 2
-  m_Value: -0.00000017898876
-  m_Size: 0.53980774
+  m_Value: -0.03243968
+  m_Size: 0.018185548
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -844,8 +844,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 1.300003, y: -70.79999}
-  m_SizeDelta: {x: -85.0445, y: -228.1843}
+  m_AnchoredPosition: {x: 1.300003, y: -1036.6299}
+  m_SizeDelta: {x: -85.0445, y: -2160.7188}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1119075104
 MonoBehaviour:
@@ -1095,8 +1095,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 170.49998}
-  m_SizeDelta: {x: 0, y: 300}
+  m_AnchoredPosition: {x: 0, y: 2640.795}
+  m_SizeDelta: {x: 0, y: 2233.0527}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1684801208
 GameObject:
@@ -1142,6 +1142,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   chat: {fileID: 1119075102}
+  content: {fileID: 1530798417}
   receivedmsg: {fileID: 4428894664726065951, guid: 2c40a38890004824d8e6f6b86c9bae4b, type: 3}
   sentmsg: {fileID: 3164450261110998101, guid: 6ac643696553a6346acb313ab6d01e2f, type: 3}
   inputfield: {fileID: 1360169078}
