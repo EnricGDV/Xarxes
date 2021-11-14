@@ -24,8 +24,7 @@ public class CustomServer : MonoBehaviour
     {
         none,
         listen,
-        send,
-        await,
+        await_and_send,
         shutDown
     }
 
@@ -78,23 +77,27 @@ public class CustomServer : MonoBehaviour
                     listenThreadCreated = true;
                 }
                 break;
-            case stateTCP.await:
+            case stateTCP.await_and_send:
                 if (!waitThreadCreated)
                 {
                     waitThread = new Thread(WaitThread);
                     waitThread.Start();
                     waitThreadCreated = true;
                 }
-                break;
-            case stateTCP.send:
                 if (newClientConnected)
                 {
                     int elements = clients_list.Count;
-                    clients_list[elements-1].client_socket.Send(Encoding.ASCII.GetBytes("connection succed, welcome to the Chat Room"));                   
+                    clients_list[elements - 1].client_socket.Send(Encoding.ASCII.GetBytes("connection succed, welcome to the Chat Room"));
                     newClientConnected = false;
-                    serverState = stateTCP.await;
+                }
+                if (!listenThreadCreated)
+                {
+                    listenThread = new Thread(ListenThread);
+                    listenThread.Start();
+                    listenThreadCreated = true;
                 }
                 break;
+            
             case stateTCP.shutDown:
                 if (waitThread.IsAlive)
                     Debug.Log("Thread is Alive! Can't Shut Down!!!");
@@ -133,7 +136,7 @@ public class CustomServer : MonoBehaviour
 
         waitThreadCreated = false;
         
-        serverState = stateTCP.send;
+        serverState = stateTCP.await_and_send;
     }
 
     void ListenThread() //accept clients and connect them
@@ -156,8 +159,9 @@ public class CustomServer : MonoBehaviour
             Debug.Log("Server: Trying to look for clients");
             Debug.Log(e);
         }
-        serverState = stateTCP.await;
+        serverState = stateTCP.await_and_send;
         newClientConnected = true;
+        listenThreadCreated = false;
     }
 
 }
