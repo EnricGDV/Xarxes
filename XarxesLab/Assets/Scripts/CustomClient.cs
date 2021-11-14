@@ -42,6 +42,7 @@ public class CustomClient : MonoBehaviour
     public GameObject chat;
     public GameObject receivedmsg;
     public GameObject sentmsg;
+    public GameObject inputfield;
     private int messagenum;
     private int maxMessages = 8;
 
@@ -72,6 +73,8 @@ public class CustomClient : MonoBehaviour
     {
         if (count >= 5 && clientState != stateTCP.none)
             clientState = stateTCP.shutDown;
+
+        inputfield.GetComponent<InputField>().onEndEdit.AddListener(WriteMessage);
 
         switch (clientState)
         {
@@ -198,7 +201,7 @@ public class CustomClient : MonoBehaviour
 
     }
 
-    void SpawnMessage(string name, string text, bool isSender)
+    public void SpawnMessage(string name, string text, bool isSender)
     {
         MoveMessages();
         
@@ -226,5 +229,10 @@ public class CustomClient : MonoBehaviour
         messages[0] = latestMessage;
         
         messagenum++;
+    }
+
+    void WriteMessage(string txt)
+    {
+        SpawnMessage("Client", txt, true);
     }
 }
