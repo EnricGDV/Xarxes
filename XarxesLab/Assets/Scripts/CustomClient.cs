@@ -133,6 +133,7 @@ public class CustomClient : MonoBehaviour
             int recv = server.Receive(data);
             string stringData = Encoding.ASCII.GetString(data, 0, recv);
             clientReceivedMessage = stringData;
+            Debug.Log("message from server: " + clientReceivedMessage);
         }
         catch (System.Exception e)
         {
