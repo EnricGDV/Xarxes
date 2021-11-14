@@ -7,6 +7,7 @@ using System.Threading;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 public class CustomClient : MonoBehaviour
 {
@@ -14,15 +15,14 @@ public class CustomClient : MonoBehaviour
     {
         none,
         connect,
-        send,
-        await,
+        send_and_await,
         shutDown
     }
 
     struct message
     {
-        string name;
-        string text;
+        public string name;
+        public string text;
 
         public message(string nme, string txt) { name = nme; text = txt; }
     }
@@ -34,18 +34,18 @@ public class CustomClient : MonoBehaviour
     private IPEndPoint ipep;
     private Socket server;
     private stateTCP clientState;
-    private int count;
     private bool waitThreadCreated;
     private bool connectThreadCreated;
     private List<message> messages;
     private List<GameObject> panels;
 
     public GameObject chat;
-    public GameObject content;
     public GameObject receivedmsg;
     public GameObject sentmsg;
     public GameObject inputfield;
+    public int clientnum;
     private bool messagewritten;
+    private string clientReceivedMessage;
 
     // Start is called before the first frame update
     void Start()
@@ -60,25 +60,31 @@ public class CustomClient : MonoBehaviour
 
         waitThreadCreated = false;
         connectThreadCreated = false;
-
-        count = 0;
-
+        
+        messagewritten = false;//we start with no messages written from client
+        clientnum = SceneManager.sceneCount - 1;
         messages = new List<message>();
         panels = new List<GameObject>();
-        messagewritten = false;
+        this.name = "client" + clientnum;
     }
 
 
     // Update is called once per frame
     void Update()
     {
-        if (count >= 5 && clientState != stateTCP.none)
-            clientState = stateTCP.shutDown;
+        //if (count >= 5 && clientState != stateTCP.none)
+        //    clientState = stateTCP.shutDown;
 
-        if(!messagewritten)
+        if(Input.GetKeyDown(KeyCode.Return))
         {
+            WriteMessage(inputfield.GetComponent<InputField>().text);
             messagewritten = true;
-            inputfield.GetComponent<InputField>().onEndEdit.AddListener(WriteMessage);
+        }
+
+        if(clientReceivedMessage != null)
+        {
+            SpawnMessage("OtherClient", clientReceivedMessage, false);
+            clientReceivedMessage = null;
         }
 
         switch (clientState)
@@ -87,31 +93,29 @@ public class CustomClient : MonoBehaviour
                 break;
             case stateTCP.connect:
                 if (!connectThreadCreated)
-                {
+                {  
                     connectThread = new Thread(ConnectThread);
                     connectThread.Start();
                 }
 
                 break;
-            case stateTCP.send:
-                SendPing();
-                break;
-            case stateTCP.await:
+            case stateTCP.send_and_await:
                 if (!waitThreadCreated)
                 {
-                    SpawnMessage("Server", "PONG", false);
                     waitThread = new Thread(WaitThread);
                     waitThread.Start();
                     waitThreadCreated = true;
                 }
-                else if (waitThreadCreated)
+                if (messagewritten)
                 {
-                    //Debug.LogWarning("Client: thread is living la vida loca");
+                    //send message to the server
+                    server.Send(Encoding.ASCII.GetBytes(messages[messages.Count-1].text));
+                    messagewritten = false;
                 }
                 break;
             case stateTCP.shutDown:
                 if (waitThread.IsAlive)
-                    Debug.Log("Thread is Alive! Can't Shut Down!!!");
+                       Debug.Log("Thread is Alive! Can't Shut Down!!!");
                 Debug.Log("Stopping server from CustomClient.cs");
                 clientState = stateTCP.none;
                 server.Close();
@@ -120,40 +124,22 @@ public class CustomClient : MonoBehaviour
 
     }
 
-
-    void SendPing()
-    {
-        server.Send(Encoding.ASCII.GetBytes("ping"));
-        SpawnMessage("Client", "PING", true);
-        clientState = stateTCP.await;
-    }
-
     void WaitThread()
     {
-        //Debug.LogWarning("Starting client trhead, waiting for pong!");
-
-
-
         try
         {
             int recv = server.Receive(data);
             string stringData = Encoding.ASCII.GetString(data, 0, recv);
 
-            //Debug.Log("Client: received data is:" + stringData);
-            if (stringData == "pong")
-            {
-                Debug.Log("Server sent:    PONG");
-                Thread.Sleep(500);
-                clientState = stateTCP.send;
-                count++;
-            }
+            clientReceivedMessage = stringData;
+            Debug.Log("message from server: " + clientReceivedMessage);
         }
         catch (System.Exception e)
         {
             Debug.Log("Client: Connection failed.. trying again...");
             Debug.Log(e);
         }
-
+        
         waitThreadCreated = false;
     }
 
@@ -171,24 +157,22 @@ public class CustomClient : MonoBehaviour
             Debug.Log(e);
             return;
         }
-        clientState = stateTCP.send;
+        clientState = stateTCP.send_and_await;
     }
 
     void MoveMessages()
     {
-        if(messages.Count > 0)
+        for (int i = 0; i < messages.Count; i++)
         {
-            for (int i = 0; i < messages.Count; i++)
-            {
-                panels[i].GetComponent<RectTransform>().anchoredPosition
-                    = new Vector2(panels[i].GetComponent<RectTransform>().anchoredPosition.x, panels[i].GetComponent<RectTransform>().anchoredPosition.y + 15);
-            }
+            panels[i].GetComponent<RectTransform>().anchoredPosition
+                = new Vector2(panels[i].GetComponent<RectTransform>().anchoredPosition.x, panels[i].GetComponent<RectTransform>().anchoredPosition.y + 15);
         }
     }
 
     public void SpawnMessage(string name, string text, bool isSender)
     {
-        MoveMessages();
+        if (messages.Count > 0)
+            MoveMessages();
         
         if (!isSender)
         {
@@ -214,9 +198,9 @@ public class CustomClient : MonoBehaviour
         messages.Add(latestMessage);
         
     }
-
-    void WriteMessage(string txt)
+    
+    private void WriteMessage(string txt)
     {
-        SpawnMessage("Client", txt, true);
+        SpawnMessage(this.name, txt, true);
     }
 }
