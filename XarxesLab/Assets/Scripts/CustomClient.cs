@@ -42,6 +42,8 @@ public class CustomClient : MonoBehaviour
     public GameObject chat;
     public GameObject receivedmsg;
     public GameObject sentmsg;
+    private int messagenum;
+    private int maxMessages = 8;
 
     // Start is called before the first frame update
     void Start()
@@ -59,8 +61,9 @@ public class CustomClient : MonoBehaviour
 
         count = 0;
 
-        messages = new message[1];
-        panels = new GameObject[1];
+        messages = new message[maxMessages];
+        panels = new GameObject[maxMessages];
+        messagenum = 0;
     }
 
 
@@ -165,21 +168,34 @@ public class CustomClient : MonoBehaviour
 
     void MoveMessages()
     {
-        if (messages.Length < 10)
+        if(messagenum < maxMessages)
         {
-            messages = new message[messages.Length + 1];
-        }
+            for (int i = 1; i <= messagenum; i++)
+            {
+                messages[i] = messages[i - 1];
+                panels[i] = panels[i - 1];
+                panels[i].GetComponent<RectTransform>().anchoredPosition 
+                    = new Vector2(panels[i].GetComponent<RectTransform>().anchoredPosition.x, panels[i].GetComponent<RectTransform>().anchoredPosition.y + 15);
 
-        if(messages.Length > 1)
+            }
+        }
+        else
         {
             for (int i = 1; i < messages.Length; i++)
             {
                 messages[i] = messages[i - 1];
+                if(i >= maxMessages - 1)
+                {
+                    panels[i].SetActive(false);
+                }
                 panels[i] = panels[i - 1];
-                panels[i].GetComponent<RectTransform>().SetInsetAndSizeFromParentEdge(RectTransform.Edge.Bottom, 0, panels[i].GetComponent<RectTransform>().rect.height);
+                panels[i].GetComponent<RectTransform>().anchoredPosition
+                    = new Vector2(panels[i].GetComponent<RectTransform>().anchoredPosition.x, panels[i].GetComponent<RectTransform>().anchoredPosition.y + 15);
+
             }
+            
         }
-        
+
     }
 
     void SpawnMessage(string name, string text, bool isSender)
@@ -188,24 +204,27 @@ public class CustomClient : MonoBehaviour
         
         if (!isSender)
         {
-            GameObject go = Instantiate(receivedmsg) as GameObject;
+            GameObject go = Instantiate(receivedmsg, chat.transform) as GameObject;
             go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
             go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
-            go.transform.SetParent(chat.transform, false);
+            go.GetComponent<RectTransform>().anchoredPosition
+                    = new Vector2(go.GetComponent<RectTransform>().anchoredPosition.x, go.GetComponent<RectTransform>().anchoredPosition.y - 35);
             panels[0] = go;
         }
         else if (isSender)
         {
-            GameObject go = Instantiate(sentmsg) as GameObject;
+            GameObject go = Instantiate(sentmsg, chat.transform) as GameObject;
             go.GetComponent<MessageChildren>().childname.GetComponent<Text>().text = name;
             go.GetComponent<MessageChildren>().childtext.GetComponent<Text>().text = text;
-            go.transform.SetParent(chat.transform, false);
+            go.GetComponent<RectTransform>().anchoredPosition
+                    = new Vector2(go.GetComponent<RectTransform>().anchoredPosition.x, go.GetComponent<RectTransform>().anchoredPosition.y - 35);
             panels[0] = go;
         }
         
 
-
         message latestMessage = new message (name, text);
         messages[0] = latestMessage;
+        
+        messagenum++;
     }
 }
