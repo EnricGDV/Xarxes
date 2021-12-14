@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Collections.Generic;
 
-public class ConnectionAttempt2 : MonoBehaviour // AKA: Server
+public class ServerScript : MonoBehaviour // AKA: Server
 {
     private Socket newSocket;
     private int recv;
@@ -14,15 +14,22 @@ public class ConnectionAttempt2 : MonoBehaviour // AKA: Server
     private string text;
     private Thread msgThread;
     private EndPoint client;
-    private bool isNextMsgNeeded = false;
     private List<Player> playerList = new List<Player>();
+    
+    public enum ConnectionState
+    {
+        STATE_NONE,
+        STATE_HELLO,
+        STATE_CONNECTED,
+        STATE_DISCONNECTING
+    }
     public class Player
     {
-        public string playerName;
+        public string playerName; 
         public byte[] data; //TODO: maybe not needed
         public string textBuffer; //TODO: maybe not needed
-        public bool isConnected = false; //TODO: maybe it should be set to true on constructor
         private EndPoint endPoint;
+        public ConnectionState connectionState = ConnectionState.STATE_NONE;
         public Player(EndPoint ep) { endPoint = ep; }
         public EndPoint GetEndPoint() { return endPoint; }
     }
@@ -41,9 +48,23 @@ public class ConnectionAttempt2 : MonoBehaviour // AKA: Server
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.N))
+        for(int i = 0; i < playerList.Count; i++)
         {
-            SendMessage();
+            if (playerList[i].connectionState == ConnectionState.STATE_HELLO)
+            {
+                SendMessage(playerList[i], "Welcome!");
+                playerList[i].connectionState = ConnectionState.STATE_CONNECTED;
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.B)) // TODO: remove this
+        {
+            if (playerList.Count > 0)
+                SendMessage(playerList[0], "B pressed");
+        }
+        else if (Input.GetKeyDown(KeyCode.N)) // TODO: remove this
+        {
+            if (playerList.Count > 0)
+                SendMessage(playerList[0], "Disconnect!");
         }
     }
     void AwaitMsg()
@@ -58,12 +79,12 @@ public class ConnectionAttempt2 : MonoBehaviour // AKA: Server
                 text = Encoding.ASCII.GetString(data, 0, recv);
                 Debug.Log(text);
 
-                if (text == "Hello")
+                if (text == "Hello!")
                 {
                     Player newPlayer = new Player(client);
                     playerList.Add(newPlayer);
                     newPlayer.playerName = "New Player 1";
-                    newPlayer.isConnected = true;
+                    newPlayer.connectionState = ConnectionState.STATE_HELLO;
                 }
             }
             catch (System.Exception e)
@@ -74,14 +95,13 @@ public class ConnectionAttempt2 : MonoBehaviour // AKA: Server
         }
     }
 
-    void SendMessage()
+    void SendMessage(Player client, string message)
     {
         if (playerList.Count < 1)
             return;
 
-        Player player = playerList[0];
-        data = Encoding.ASCII.GetBytes("Tomás");
-        newSocket.SendTo(data, data.Length, SocketFlags.None, player.GetEndPoint());
+        data = Encoding.ASCII.GetBytes(message);
+        newSocket.SendTo(data, data.Length, SocketFlags.None, client.GetEndPoint());
 
         //msgThread = new Thread(AwaitMsg);
         //msgThread.Start();
