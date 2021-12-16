@@ -9,13 +9,11 @@ public class ServerScript : MonoBehaviour // AKA: Server
 {
     private Socket newSocket;
     private int recv;
-    private byte[] data;
     private IPEndPoint ipep;
-    private string text;
     private Thread msgThread;
-    private EndPoint client;
     private List<Player> playerList = new List<Player>();
-    
+    public int playerIt = 1;
+
     public enum ConnectionState
     {
         STATE_NONE,
@@ -28,16 +26,14 @@ public class ServerScript : MonoBehaviour // AKA: Server
         public string playerName; 
         public byte[] data; //TODO: maybe not needed
         public string textBuffer; //TODO: maybe not needed
-        private EndPoint endPoint;
+        public EndPoint endPoint;
         public ConnectionState connectionState = ConnectionState.STATE_NONE;
-        public Player(EndPoint ep) { endPoint = ep; }
+        public Player(EndPoint ep) { endPoint = ep; data = new byte[1024]; }
         public EndPoint GetEndPoint() { return endPoint; }
     }
 
-    // Start is called before the first frame update
     void Start() 
     {
-        data = new byte[1024];
         ipep = new IPEndPoint(IPAddress.Any, 2517);
         newSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         newSocket.Bind(ipep);
@@ -52,21 +48,22 @@ public class ServerScript : MonoBehaviour // AKA: Server
         {
             if (playerList[i].connectionState == ConnectionState.STATE_HELLO)
             {
-                SendMessage(playerList[i], "Welcome!");
+                SendMessage("Welcome!", playerList[i]);
                 playerList[i].connectionState = ConnectionState.STATE_CONNECTED;
             }
         }
         if (Input.GetKeyDown(KeyCode.B)) // TODO: remove this
         {
             if (playerList.Count > 0)
-                SendMessage(playerList[0], "B pressed");
+                SendMessage("B key pressed", playerList[0]);
         }
         else if (Input.GetKeyDown(KeyCode.N)) // TODO: remove this
         {
             if (playerList.Count > 0)
-                SendMessage(playerList[0], "Disconnect!");
+                SendMessage("Disconnect!", playerList[0]);
         }
     }
+
     void AwaitMsg()
     {
         Debug.Log("Starting server thread! Awaiting messages...");
@@ -74,17 +71,24 @@ public class ServerScript : MonoBehaviour // AKA: Server
         {
             try
             {
-                client = ipep;
-                recv = newSocket.ReceiveFrom(data, ref client);
-                text = Encoding.ASCII.GetString(data, 0, recv);
-                Debug.Log(text);
+                byte[] data = new byte[1024];
+                EndPoint ep = ipep;
+                recv = newSocket.ReceiveFrom(data, ref ep);
+                string text = Encoding.ASCII.GetString(data, 0, recv);
 
                 if (text == "Hello!")
                 {
-                    Player newPlayer = new Player(client);
-                    playerList.Add(newPlayer);
-                    newPlayer.playerName = "New Player 1";
-                    newPlayer.connectionState = ConnectionState.STATE_HELLO;
+                    AddPlayer(ep);
+                }
+                else if (text == "Goodbye!")
+                {
+                    Player newPlayer = FindPlayerFromClient(ep);
+
+                    if (newPlayer != null)
+                    {
+                        Debug.Log(newPlayer.playerName + " disconnected!");
+                        playerList.Remove(newPlayer);
+                    }
                 }
             }
             catch (System.Exception e)
@@ -95,17 +99,40 @@ public class ServerScript : MonoBehaviour // AKA: Server
         }
     }
 
-    void SendMessage(Player client, string message)
+    // Sends a message to a single client or, if no client was specified, to all clients
+    private void SendMessage(string message, Player client = null) 
     {
         if (playerList.Count < 1)
             return;
 
-        data = Encoding.ASCII.GetBytes(message);
-        newSocket.SendTo(data, data.Length, SocketFlags.None, client.GetEndPoint());
+        byte[] data = Encoding.ASCII.GetBytes(message);
 
-        //msgThread = new Thread(AwaitMsg);
-        //msgThread.Start();
+        if (client == null)
+        {
+            for (int i = 0; i < playerList.Count; i++)
+                newSocket.SendTo(data, data.Length, SocketFlags.None, playerList[i].GetEndPoint());
+        }
+        else
+            newSocket.SendTo(data, data.Length, SocketFlags.None, client.GetEndPoint());
+    }
 
-        //isNextMsgNeeded = false;
+    // Adds a player, lol
+    private void AddPlayer(EndPoint ep)
+    {
+        Player newPlayer = new Player(ep);
+        playerList.Add(newPlayer);
+        newPlayer.playerName = "New Player " + playerIt.ToString(); playerIt++;
+        newPlayer.connectionState = ConnectionState.STATE_HELLO;
+    }
+
+    // Returns the Player linked with the specified EndPoint
+    private Player FindPlayerFromClient(EndPoint client) 
+    {
+        for(int i = 0; i < playerList.Count; i++)
+        {
+            if (playerList[i].GetEndPoint().ToString() == client.ToString())
+                return playerList[i];
+        }
+        return null;
     }
 }

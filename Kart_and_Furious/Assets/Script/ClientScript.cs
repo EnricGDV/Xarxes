@@ -8,16 +8,15 @@ using System.Threading;
 public class ClientScript : MonoBehaviour
 {
     private Socket newSocket;
-    private byte[] data;
     private IPEndPoint ipep;
     EndPoint server;
     private int recv;
-    private string text;
     private Thread helloThread;
     private Thread msgThread;
     static string ipAddress204 = "192.168.204.24"; //TODO: remove when we have input
     static string localIPAddress = "127.0.0.1";    //TODO: remove when we have input
     private bool isTimeoutTriggered = false; // TODO: change for something better
+    private bool isDisconnectTriggered = false; // TODO: change for something better
     private enum ConnectionState
     {
         STATE_NONE,
@@ -32,13 +31,11 @@ public class ClientScript : MonoBehaviour
     {
         ipep = new IPEndPoint(IPAddress.Parse(localIPAddress), 2517); // TODO: This needs to be inputed
         server = ipep;
-        data = new byte[1024];
         newSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
         // TODO: move this when we can input an IP Address
         // {
-        data = Encoding.ASCII.GetBytes("Hello!");
-        newSocket.SendTo(data, data.Length, SocketFlags.None, ipep);
+        SendMessage("Hello!");
         connectionState = ConnectionState.STATE_HELLO;
         helloThread = new Thread(AwaitWelcome);
         helloThread.Start();
@@ -67,11 +64,20 @@ public class ClientScript : MonoBehaviour
                     // Thread awaiting messages from server (Pings!) constantly (different thread for pings (?))
                     // Timeout timer for involuntary DC
                     // Active DC option
+                    if (isDisconnectTriggered)
+                    {
+                        isDisconnectTriggered = false;
+                        connectionState = ConnectionState.STATE_DISCONNECTING;
+                    }
                     return;
                 }
             case ConnectionState.STATE_DISCONNECTING:
                 {
                     // Shutdown server socket
+                    //newSocket.Close(); // (?)
+                    connectionState = ConnectionState.STATE_NONE;
+
+                    SendMessage("Goodbye!");
                     return;
                 }
         }
@@ -79,14 +85,14 @@ public class ClientScript : MonoBehaviour
     void AwaitWelcome()
     {
         Debug.Log("Starting client thread! Awaiting welcome from server...");
-        data = new byte[1024];// TODO: I think I use this where and when I'm not supposed to
 
         while (connectionState == ConnectionState.STATE_HELLO && !isTimeoutTriggered) // This loop can be broken from outside the thread through a timeout handled elsewhere
         {
             try
             {
+                byte[] data = new byte[1024];
                 recv = newSocket.ReceiveFrom(data, ref server);
-                text = Encoding.ASCII.GetString(data, 0, recv);
+                string text = Encoding.ASCII.GetString(data, 0, recv);
 
                 if (text == "Welcome!")
                 {
@@ -112,18 +118,22 @@ public class ClientScript : MonoBehaviour
     void AwaitMsg()
     {
         Debug.Log("Starting client thread! Awaiting messages from server...");
-        data = new byte[1024];
-        while (connectionState == ConnectionState.STATE_CONNECTED) // TODO: maybe this isn't ideal (?)
+        ConnectionState cState = connectionState;
+        while (connectionState == ConnectionState.STATE_CONNECTED)  // TODO: maybe this isn't ideal (?)
         {
             try
             {
+                byte[] data = new byte[1024];
                 recv = newSocket.ReceiveFrom(data, ref server);
-                text = Encoding.ASCII.GetString(data, 0, recv);
-                Debug.Log(text);
+                string text = Encoding.ASCII.GetString(data, 0, recv);
+
                 if (text == "Disconnect!") 
                 {
-                    connectionState = ConnectionState.STATE_DISCONNECTING;
+                    isDisconnectTriggered = true;
+                    //Thread.Sleep(200);
+                    //connectionState = ConnectionState.STATE_DISCONNECTING;
                 }
+                //SendMessage(text);
             }
             catch (System.Exception e)
             {
@@ -132,6 +142,12 @@ public class ClientScript : MonoBehaviour
             }
         }
         Debug.Log("Disconnecting from server. Stopping client thread!");
+    }
+    private new void SendMessage(string message)
+    {
+        byte[] data = new byte[1024];
+        data = Encoding.ASCII.GetBytes(message);
+        newSocket.SendTo(data, data.Length, SocketFlags.None, server);
     }
     public string GetLocalIPv4()
     {
