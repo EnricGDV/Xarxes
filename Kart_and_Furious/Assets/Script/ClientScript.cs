@@ -160,4 +160,10 @@ public class ClientScript : MonoBehaviour
     //    helloThread.Abort();
     //    msgThread.Abort();
     //}
+
+    public void AssignServerIP(string txt)
+    {
+        ipAddress204 = txt;
+        Debug.Log("Server IP is:" + ipAddress204);
+    }
 }
