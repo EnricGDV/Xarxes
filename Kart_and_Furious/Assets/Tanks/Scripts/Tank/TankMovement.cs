@@ -57,24 +57,6 @@ namespace Complete
             // Store the value of both input axes.
             m_MovementInputValue = Input.GetAxis (m_MovementAxisName);
             m_TurnInputValue = Input.GetAxis (m_TurnAxisName);
-
-            EngineAudio ();
-        }
-
-
-        private void EngineAudio ()
-        {
-            // If there is no input (the tank is stationary)...
-            if (Mathf.Abs (m_MovementInputValue) < 0.1f && Mathf.Abs (m_TurnInputValue) < 0.1f)
-            {
-                // ... and if the audio source is currently playing the driving clip...
-
-            }
-            else
-            {
-                // Otherwise if the tank is moving and if the idling clip is currently playing...
-
-            }
         }
 
 
