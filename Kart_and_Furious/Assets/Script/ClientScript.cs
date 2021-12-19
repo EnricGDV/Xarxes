@@ -20,7 +20,7 @@ public class ClientScript : MonoBehaviour
     private DateTime lastPing;
     private Thread pingThread;
     private Thread msgThread;
-    public GameManager gameManager;
+    private GameManager gameManager;
     private MemoryStream stream;
     static string ipAddress104 = "192.168.104.24";  // TODO: remove when we have input
     static string ipAddress204 = "192.168.204.24";  // TODO: remove when we have input
@@ -240,47 +240,47 @@ public class ClientScript : MonoBehaviour
 
         string command = input.Remove(input.Length - 1);
         int kartId = int.Parse(input[input.Length - 1].ToString());
-        // TODO: Access the GameManager's PUBLIC list of cars and change that car's inputs
+        KartMovement kMov = gameManager.kartsList[kartId - 1];
         switch (command)
         {
             case "KeyDownW":
                 {
-                    kartScript.keyW.keyDown = true;
+                    kMov.keyW.keyDown = true;
                     return;
                 }
             case "KeyUpW":
                 {
-                    kartScript.keyW.keyUp = true;
+                    kMov.keyW.keyUp = true;
                     return;
                 }
             case "KeyDownS":
                 {
-                    kartScript.keyS.keyDown = true;
+                    kMov.keyS.keyDown = true;
                     return;
                 }
             case "KeyUpS":
                 {
-                    kartScript.keyS.keyUp = true;
+                    kMov.keyS.keyUp = true;
                     return;
                 }
             case "KeyDownA":
                 {
-                    kartScript.keyA.keyDown = true;
+                    kMov.keyA.keyDown = true;
                     return;
                 }
             case "KeyUpA":
                 {
-                    kartScript.keyA.keyUp = true;
+                    kMov.keyA.keyUp = true;
                     return;
                 }
             case "KeyDownD":
                 {
-                    kartScript.keyD.keyDown = true;
+                    kMov.keyD.keyDown = true;
                     return;
                 }
             case "KeyUpD":
                 {
-                    kartScript.keyD.keyUp = true;
+                    kMov.keyD.keyUp = true;
                     return;
                 }
         }

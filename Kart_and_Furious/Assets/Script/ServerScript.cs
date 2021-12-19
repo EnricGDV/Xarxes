@@ -18,7 +18,7 @@ public class ServerScript : MonoBehaviour // AKA: Server
     private List<Player> playerList = new List<Player>();
     public int playerIt;
     public string localIPAddress;
-    public GameManager gameManager;
+
     public enum ConnectionState
     {
         STATE_DISCONNECTED,

@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Complete;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -9,6 +10,7 @@ public class GameManager : MonoBehaviour
     public GameObject camera;
     public int maxLaps = 1;
     private int laps = 0;
+    public List<KartMovement> kartsList;
 
     private void Start()
     {
@@ -31,6 +33,7 @@ public class GameManager : MonoBehaviour
         newKart.name = "Kart " + id;
         newKart.transform.position = new Vector3(initialCoords.position.x - 0.8f * id, initialCoords.position.y, initialCoords.position.z - 0.6f * (id%2-1));
         camera.GetComponent<CameraScript>().target = newKart;
+        kartsList.Add(newKart.GetComponent<KartMovement>());
     }
 
     public void AddLap(int kartnum)
