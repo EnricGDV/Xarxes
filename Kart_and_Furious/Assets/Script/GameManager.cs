@@ -33,8 +33,9 @@ public class GameManager : MonoBehaviour
         camera.GetComponent<CameraScript>().target = newKart;
     }
 
-    public void AddLap()
+    public void AddLap(int kartnum)
     {
         laps++;
+        Debug.Log("Kart " + kartnum + " has completed " + (laps-1) + "/" + maxLaps + " laps!");
     }
 }

@@ -90,8 +90,19 @@ namespace Complete
 
         private void Move()
         {
+            int direction;
+
+            if(keyW.keyRepeat && !keyS.keyRepeat)
+                direction = 1;
+            else if (keyS.keyRepeat && !keyW.keyRepeat)
+                direction = -1;
+            else if (keyW.keyRepeat && keyS.keyRepeat)
+                direction = 0;
+            else
+                direction = 0;
+
             // Create a vector in the direction the tank is facing with a magnitude based on the input, speed and the time between frames.
-            Vector3 movement = transform.forward * m_MovementInputValue * m_Speed * Time.deltaTime;
+            Vector3 movement = transform.forward * m_Speed * Time.deltaTime * direction;
 
             // Apply this movement to the rigidbody's position.
             m_Rigidbody.MovePosition(m_Rigidbody.position + movement);
@@ -100,8 +111,19 @@ namespace Complete
 
         private void Turn()
         {
+            int direction;
+
+            if (keyD.keyRepeat && !keyA.keyRepeat)
+                direction = 1;
+            else if (keyA.keyRepeat && !keyD.keyRepeat)
+                direction = -1;
+            else if (keyD.keyRepeat && keyA.keyRepeat)
+                direction = 0;
+            else
+                direction = 0;
+
             // Determine the number of degrees to be turned based on the input, speed and time between frames.
-            float turn = m_TurnInputValue * m_TurnSpeed * Time.deltaTime;
+            float turn = m_TurnSpeed * Time.deltaTime * direction;
 
             // Make this into a rotation in the y axis.
             Quaternion turnRotation = Quaternion.Euler(0f, turn, 0f);
