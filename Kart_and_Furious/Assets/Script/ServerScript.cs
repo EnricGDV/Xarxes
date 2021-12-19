@@ -115,7 +115,9 @@ public class ServerScript : MonoBehaviour // AKA: Server
                 else if (text == "Hello!") // This is the only one that can use ==
                 {
                     AddPlayer(ep, playerIt);
+                    Debug.Log("New client created: " + playerIt);
                     playerIt++;
+                    Thread.Sleep(500);
                 }
                 else if (text.Contains("Goodbye!"))
                 {

@@ -22,10 +22,7 @@ public class ClientScript : MonoBehaviour
     private Thread msgThread;
     private GameManager gameManager;
     private MemoryStream stream;
-    static string ipAddress104 = "192.168.104.24";  // TODO: remove when we have input
-    static string ipAddress204 = "192.168.204.24";  // TODO: remove when we have input
-    static string localIPAddress = "127.0.0.1";     // TODO: remove when we have input
-    static string tIPAddress = "192.168.1.51";      // TODO: remove when we have input
+    static string tIPAddress = "127.0.0.1";      // TODO: remove when we have input
     private bool isTimeoutTriggered;                // TODO: change for something better
     private bool isDisconnectTriggered;             // TODO: change for something better
     private KartMovement kartScript;
@@ -152,9 +149,10 @@ public class ClientScript : MonoBehaviour
                     connectionState = ConnectionState.STATE_CONNECTED;
                     msgThread = new Thread(AwaitMsg);
                     msgThread.Start();
-                    //gameManager.AddKart(id); // TODO: Check!!!
+                    gameManager.kartNeeded = true; 
                     string idString = text.Substring(8, 1);
                     id = int.Parse(idString);
+                    gameManager.kartID = id;
                 }
             }
             catch (System.Exception e)

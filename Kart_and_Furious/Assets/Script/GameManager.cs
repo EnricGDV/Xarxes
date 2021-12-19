@@ -11,14 +11,25 @@ public class GameManager : MonoBehaviour
     public int maxLaps = 1;
     private int laps = 0;
     public List<KartMovement> kartsList;
+    public int kartID = 1;
+
+    public bool kartNeeded = false;
+
+    private List<GameObject> kartObjects;
 
     private void Start()
     {
-        AddKart(1);
+
     }
 
     private void Update()
     {
+        if(kartNeeded)
+        {
+            kartNeeded = false;
+            AddKart(kartID);
+        } 
+
         if(laps == maxLaps+1)
         {
             Debug.Log("Race Finished!!");
@@ -34,6 +45,7 @@ public class GameManager : MonoBehaviour
         newKart.transform.position = new Vector3(initialCoords.position.x - 0.8f * id, initialCoords.position.y, initialCoords.position.z - 0.6f * (id%2-1));
         camera.GetComponent<CameraScript>().target = newKart;
         kartsList.Add(newKart.GetComponent<KartMovement>());
+        kartObjects.Add(newKart);     
     }
 
     public void AddLap(int kartnum)
