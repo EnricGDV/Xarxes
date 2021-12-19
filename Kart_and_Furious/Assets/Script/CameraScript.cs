@@ -10,7 +10,6 @@ public class CameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        target = GameObject.Find("Kart 1");
         gameObject.transform.position = new Vector3(target.transform.position.x - distance.x, target.transform.position.y + distance.y, target.transform.position.z + distance.z);
         gameObject.transform.LookAt(target.transform.position);
     }
