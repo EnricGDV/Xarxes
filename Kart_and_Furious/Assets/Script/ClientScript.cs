@@ -4,6 +4,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Linq;
 using System.Threading;
+using System;
+using System.IO;
+using Complete;
 
 public class ClientScript : MonoBehaviour
 {
@@ -12,34 +15,51 @@ public class ClientScript : MonoBehaviour
     EndPoint server;
     private int recv;
     private Thread helloThread;
+    private Thread timeOutThread;
+    private float welcomeTimeout = 5.0f;
+    private DateTime lastPing;
+    private Thread pingThread;
     private Thread msgThread;
-    static string ipAddress204 = "192.168.204.24"; //TODO: remove when we have input
-    static string localIPAddress = "127.0.0.1";    //TODO: remove when we have input
-    private bool isTimeoutTriggered = false; // TODO: change for something better
-    private bool isDisconnectTriggered = false; // TODO: change for something better
+    public GameManager gameManager;
+    private MemoryStream stream;
+    static string ipAddress104 = "192.168.104.24";  // TODO: remove when we have input
+    static string ipAddress204 = "192.168.204.24";  // TODO: remove when we have input
+    static string localIPAddress = "127.0.0.1";     // TODO: remove when we have input
+    static string tIPAddress = "192.168.1.51";      // TODO: remove when we have input
+    private bool isTimeoutTriggered;                // TODO: change for something better
+    private bool isDisconnectTriggered;             // TODO: change for something better
+    private KartMovement kartScript;
+
     private enum ConnectionState
     {
-        STATE_NONE,
+        STATE_DISCONNECTED,
         STATE_HELLO,
         STATE_CONNECTED,
         STATE_DISCONNECTING
     }
-    private ConnectionState connectionState = ConnectionState.STATE_NONE;
+    private ConnectionState connectionState = ConnectionState.STATE_DISCONNECTED;
 
     // Start is called before the first frame update
     void Start()
     {
-        ipep = new IPEndPoint(IPAddress.Parse(localIPAddress), 2517); // TODO: This needs to be inputed
+        ipep = new IPEndPoint(IPAddress.Parse(tIPAddress), 2517); // TODO: This needs to be inputed
         server = ipep;
         newSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
+        isTimeoutTriggered = false;
+        isDisconnectTriggered = false;
         // TODO: move this when we can input an IP Address
         // {
-        SendMessage("Hello!");
+        SendMessageToServer("Hello!");
         connectionState = ConnectionState.STATE_HELLO;
         helloThread = new Thread(AwaitWelcome);
         helloThread.Start();
+        timeOutThread = new Thread(Timeout);
+        timeOutThread.Start();
+        pingThread = new Thread(Ping);
+        pingThread.Start();
+        lastPing = DateTime.UtcNow;
         // }
+
     }
 
     // Update is called once per frame
@@ -47,26 +67,49 @@ public class ClientScript : MonoBehaviour
     {
         switch (connectionState)
         {
-            case ConnectionState.STATE_NONE:
+            case ConnectionState.STATE_DISCONNECTED:
                 {
                     // Socket creation on IPAddress input
                     // Hello! msg sent as soon as the socket is created
+                    if (Input.GetKeyDown(KeyCode.Space))
+                    {
+                        SendMessageToServer("Hello!");
+                        connectionState = ConnectionState.STATE_HELLO;
+                        helloThread = new Thread(AwaitWelcome);
+                        helloThread.Start();
+                        timeOutThread = new Thread(Timeout);
+                        timeOutThread.Start();
+                        pingThread = new Thread(Ping);
+                        pingThread.Start();
+                        lastPing = DateTime.UtcNow;
+                    }
                     return;
                 }
             case ConnectionState.STATE_HELLO:
                 {
                     // Thread awaitng Welcome! msg from server
                     // Timeout timer (could be done with a thread) so it does wait infinitely
+                    if (isTimeoutTriggered)
+                    {
+                        isTimeoutTriggered = false; // Important to try again!
+                        helloThread.Abort(); // TODO: Try to avoid
+                        Debug.LogWarning("Welcome not received. Timeout expired. Stopping client thread!");
+                        connectionState = ConnectionState.STATE_DISCONNECTED;
+                    }
                     return;
                 }
             case ConnectionState.STATE_CONNECTED:
                 {
                     // Thread awaiting messages from server (Pings!) constantly (different thread for pings (?))
+                    DateTime now = System.DateTime.UtcNow;
+                    if ((now - lastPing) > TimeSpan.FromSeconds(5))
+                        isDisconnectTriggered = true;
                     // Timeout timer for involuntary DC
                     // Active DC option
                     if (isDisconnectTriggered)
                     {
                         isDisconnectTriggered = false;
+                        pingThread.Abort();
                         connectionState = ConnectionState.STATE_DISCONNECTING;
                     }
                     return;
@@ -75,9 +118,9 @@ public class ClientScript : MonoBehaviour
                 {
                     // Shutdown server socket
                     //newSocket.Close(); // (?)
-                    connectionState = ConnectionState.STATE_NONE;
+                    connectionState = ConnectionState.STATE_DISCONNECTED;
 
-                    SendMessage("Goodbye!");
+                    SendMessageToServer("Goodbye!");
                     return;
                 }
         }
@@ -85,8 +128,7 @@ public class ClientScript : MonoBehaviour
     void AwaitWelcome()
     {
         Debug.Log("Starting client thread! Awaiting welcome from server...");
-
-        while (connectionState == ConnectionState.STATE_HELLO && !isTimeoutTriggered) // This loop can be broken from outside the thread through a timeout handled elsewhere
+        while (connectionState == ConnectionState.STATE_HELLO)
         {
             try
             {
@@ -99,6 +141,8 @@ public class ClientScript : MonoBehaviour
                     connectionState = ConnectionState.STATE_CONNECTED;
                     msgThread = new Thread(AwaitMsg);
                     msgThread.Start();
+                    // Create Kart function here
+                    gameObject.GetComponent<KartMovement>();
                 }
             }
             catch (System.Exception e)
@@ -107,19 +151,13 @@ public class ClientScript : MonoBehaviour
                 throw e;
             }
         }
-        if (isTimeoutTriggered)
-        {
-            Debug.Log("Welcome not received. Timeout expired. Stopping client thread!");
-        }
-        else
-            Debug.Log("Welcome received. Stopping client thread!");
+        Debug.Log("Welcome received. Stopping client thread!");
     }
 
     void AwaitMsg()
     {
         Debug.Log("Starting client thread! Awaiting messages from server...");
-        ConnectionState cState = connectionState;
-        while (connectionState == ConnectionState.STATE_CONNECTED)  // TODO: maybe this isn't ideal (?)
+        while (!isDisconnectTriggered)  // TODO: maybe this isn't ideal (?)
         {
             try
             {
@@ -127,13 +165,18 @@ public class ClientScript : MonoBehaviour
                 recv = newSocket.ReceiveFrom(data, ref server);
                 string text = Encoding.ASCII.GetString(data, 0, recv);
 
-                if (text == "Disconnect!") 
+                if (text == "Ping!")
+                {
+                    lastPing = System.DateTime.UtcNow;
+                }
+                else if (text == "Disconnect!")
                 {
                     isDisconnectTriggered = true;
-                    //Thread.Sleep(200);
-                    //connectionState = ConnectionState.STATE_DISCONNECTING;
                 }
-                //SendMessage(text);
+                else if (text.Contains("Key"))
+                {
+                    GetInput(text);
+                }
             }
             catch (System.Exception e)
             {
@@ -143,9 +186,33 @@ public class ClientScript : MonoBehaviour
         }
         Debug.Log("Disconnecting from server. Stopping client thread!");
     }
-    private new void SendMessage(string message)
+
+    void Timeout()
     {
-        byte[] data = new byte[1024];
+        DateTime myTime = System.DateTime.UtcNow;
+        while ((System.DateTime.UtcNow - myTime).Seconds < welcomeTimeout)
+        {
+            if (connectionState != ConnectionState.STATE_HELLO)
+            {
+                return;
+            }
+        }
+        isTimeoutTriggered = true;
+    }
+
+    void Ping()
+    {
+        Debug.Log("Starting ping thread!");
+        while (true) 
+        {
+            SendMessageToServer("Ping!");
+            Thread.Sleep(500);
+        }
+    }
+
+    public void SendMessageToServer(string message)
+    {
+        byte[] data;// = new byte[1024]; // (?)
         data = Encoding.ASCII.GetBytes(message);
         newSocket.SendTo(data, data.Length, SocketFlags.None, server);
     }
@@ -154,16 +221,80 @@ public class ClientScript : MonoBehaviour
         return Dns.GetHostEntry(Dns.GetHostName()).AddressList.First(f => f.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString();
     }
 
-    // TODO: make sure this isn't needed
-    //private void OnDestroy() 
-    //{
-    //    helloThread.Abort();
-    //    msgThread.Abort();
-    //}
-
-    public void AssignServerIP(string txt)
+    void GetInput(string input)
     {
-        ipAddress204 = txt;
-        Debug.Log("Server IP is:" + ipAddress204);
+        if (kartScript == null)
+            return;
+
+        switch (input)
+        {
+            case "KeyDownW":
+                {
+                    kartScript.keyW.keyDown = true;
+                    return;
+                }
+            case "KeyUpW":
+                {
+                    kartScript.keyW.keyUp = true;
+                    return;
+                }
+            case "KeyDownS":
+                {
+                    kartScript.keyS.keyDown = true;
+                    return;
+                }
+            case "KeyUpS":
+                {
+                    kartScript.keyS.keyUp = true;
+                    return;
+                }
+            case "KeyDownA":
+                {
+                    kartScript.keyA.keyDown = true;
+                    return;
+                }
+            case "KeyUpA":
+                {
+                    kartScript.keyA.keyUp = true;
+                    return;
+                }
+            case "KeyDownD":
+                {
+                    kartScript.keyD.keyDown = true;
+                    return;
+                }
+            case "KeyUpD":
+                {
+                    kartScript.keyD.keyUp = true;
+                    return;
+                }
+        }
+    }
+
+    public void AssignServerIP(string id)
+    {
+
+    }
+
+    // TODO: make sure this is needed
+    private void OnDestroy() 
+    {
+        if (helloThread != null)
+            helloThread.Abort();
+        if (timeOutThread != null)
+            timeOutThread.Abort();
+        if (msgThread != null)
+            msgThread.Abort();
+        if (pingThread != null)
+            pingThread.Abort();
+    }
+    private void OnDisable() // Debug use
+    {
+        pingThread.Abort();
+    }
+    private void OnEnable()
+    {
+        pingThread = new Thread(Ping);
+        pingThread.Start();
     }
 }

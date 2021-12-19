@@ -13,7 +13,7 @@ public class GameManager : MonoBehaviour
     }
     public void AddKart(int id)
     {
-        GameObject newPlayer = new GameObject("Player " + 1);
+        GameObject newPlayer = GameObject.Find("Client");
         GameObject newKart = Instantiate(kartPrefab, newPlayer.transform);
         newKart.name = "Kart " + 1;
     }

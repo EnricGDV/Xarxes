@@ -1,9 +1,12 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace Complete
 {
     public class KartMovement : MonoBehaviour
     {
+        public ClientScript clientScript;
+
         public int m_PlayerNumber = 1;              // Used to identify which tank belongs to which player.  This is set by this tank's manager.
         public float m_Speed = 12f;                 // How fast the tank moves forward and back.
         public float m_TurnSpeed = 180f;            // How fast the tank turns in degrees per second.
@@ -14,20 +17,26 @@ namespace Complete
         private float m_MovementInputValue;         // The current value of the movement input.
         private float m_TurnInputValue;             // The current value of the turn input.
 
-        class Key
+        public class Key
         {
             public bool keyDown = false;
             public bool keyRepeat = false;
             public bool keyUp = false;
         }
-        private Key keyW;
-        private Key keyS;
-        private Key keyA;
-        private Key keyD;
-
+        public Key keyW;
+        public Key keyS;
+        public Key keyA;
+        public Key keyD;
 
         private void Awake()
         {
+            clientScript = GameObject.Find("Client").GetComponent<ClientScript>();
+
+            keyW = new Key();
+            keyS = new Key();
+            keyA = new Key();
+            keyD = new Key();
+
             m_Rigidbody = GetComponent<Rigidbody>();
         }
 
@@ -63,10 +72,10 @@ namespace Complete
             m_TurnAxisName = "Horizontal" + m_PlayerNumber;
         }
 
-
+       
         private void Update()
         {
-            GatherInput();
+            SendInput();
         }
 
 
@@ -75,6 +84,7 @@ namespace Complete
             // Adjust the rigidbodies position and orientation in FixedUpdate.
             Move();
             Turn();
+            UpdateKeys();
         }
 
 
@@ -100,74 +110,103 @@ namespace Complete
             m_Rigidbody.MoveRotation(m_Rigidbody.rotation * turnRotation);
         }
 
-        void GatherInput()
+        // Updates the key states
+        void UpdateKeys()
         {
-            if (Input.GetKeyDown(KeyCode.W))
+            // W
+            if (keyW.keyDown) 
             {
-                if (keyW.keyDown)
-                {
-                    keyW.keyDown = false;
-                    keyW.keyRepeat = true;
-                }
-                else
-                    keyW.keyDown = true;
+                keyW.keyDown = false;
+                keyW.keyRepeat = true;
             }
-            else if (Input.GetKeyUp(KeyCode.W))
+            else if (keyW.keyUp)
             {
                 keyW.keyDown = false;
                 keyW.keyRepeat = false;
-                keyW.keyUp = true;
+                keyW.keyUp = false;
             }
 
-            if (Input.GetKeyDown(KeyCode.S))
+            // S
+            if (keyS.keyDown)
             {
-                if (keyS.keyDown)
-                {
-                    keyS.keyDown = false;
-                    keyS.keyRepeat = true;
-                }
-                else
-                    keyS.keyDown = true;
+                keyS.keyDown = false;
+                keyS.keyRepeat = true;
             }
-            else if (Input.GetKeyUp(KeyCode.S))
+            else if (keyS.keyUp)
             {
                 keyS.keyDown = false;
                 keyS.keyRepeat = false;
-                keyS.keyUp = true;
+                keyS.keyUp = false;
             }
 
-            if (Input.GetKeyDown(KeyCode.A))
+            // A
+            if (keyA.keyDown)
             {
-                if (keyA.keyDown)
-                {
-                    keyA.keyDown = false;
-                    keyA.keyRepeat = true;
-                }
-                else
-                    keyA.keyDown = true;
+                keyA.keyDown = false;
+                keyA.keyRepeat = true;
             }
-            else if (Input.GetKeyUp(KeyCode.A))
+            else if (keyA.keyUp)
             {
                 keyA.keyDown = false;
                 keyA.keyRepeat = false;
-                keyA.keyUp = true;
+                keyA.keyUp = false;
             }
 
-            if (Input.GetKeyDown(KeyCode.D))
+            // D
+            if (keyD.keyDown)
             {
-                if (keyD.keyDown)
-                {
-                    keyD.keyDown = false;
-                    keyD.keyRepeat = true;
-                }
-                else
-                    keyD.keyDown = true;
+                keyD.keyDown = false;
+                keyD.keyRepeat = true;
             }
-            else if (Input.GetKeyUp(KeyCode.D))
+            else if (keyD.keyUp)
             {
                 keyD.keyDown = false;
                 keyD.keyRepeat = false;
-                keyD.keyUp = true;
+                keyD.keyUp = false;
+            }
+        }
+
+        // Sends the inputs to the server
+        void SendInput()
+        {
+            // W
+            if (Input.GetKeyDown(KeyCode.W))
+            {
+                clientScript.SendMessageToServer("KeyDownW");
+            }
+            else if (Input.GetKeyUp(KeyCode.W))
+            {
+                clientScript.SendMessageToServer("KeyUpW");
+            }
+
+            // S
+            if (Input.GetKeyDown(KeyCode.S))
+            {
+                clientScript.SendMessageToServer("KeyDownS");
+            }
+            else if (Input.GetKeyUp(KeyCode.S))
+            {
+                clientScript.SendMessageToServer("KeyUpS");
+            }
+
+            // A
+            if (Input.GetKeyDown(KeyCode.A))
+            {
+                clientScript.SendMessageToServer("KeyDownA");
+            }
+            else if (Input.GetKeyUp(KeyCode.A))
+            {
+                clientScript.SendMessageToServer("KeyUpA");
+            }
+
+            // D
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                clientScript.SendMessageToServer("KeyDownD");
+            }
+            else if (Input.GetKeyUp(KeyCode.D))
+            {
+                clientScript.SendMessageToServer("KeyUpD");
             }
         }
     }
