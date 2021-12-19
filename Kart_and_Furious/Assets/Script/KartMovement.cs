@@ -14,6 +14,18 @@ namespace Complete
         private float m_MovementInputValue;         // The current value of the movement input.
         private float m_TurnInputValue;             // The current value of the turn input.
 
+        class Key
+        {
+            public bool keyDown = false;
+            public bool keyRepeat = false;
+            public bool keyUp = false;
+        }
+        private Key keyW;
+        private Key keyS;
+        private Key keyA;
+        private Key keyD;
+
+
         private void Awake()
         {
             m_Rigidbody = GetComponent<Rigidbody>();
@@ -54,46 +66,7 @@ namespace Complete
 
         private void Update()
         {
-            // Store the value of both input axes.
-            //m_MovementInputValue = Input.GetAxis(m_MovementAxisName);
-            //m_TurnInputValue = Input.GetAxis(m_TurnAxisName);
-
-            if (Input.GetKey(KeyCode.W))
-            {
-                m_MovementInputValue = Input.GetAxis(m_MovementAxisName);
-            }
-            else if (Input.GetKeyUp(KeyCode.W))
-            {
-                m_MovementInputValue = Input.GetAxis(m_MovementAxisName);
-            }
-
-            if (Input.GetKey(KeyCode.S))
-            {
-                m_MovementInputValue = Input.GetAxis(m_MovementAxisName);
-            }
-            else if (Input.GetKeyUp(KeyCode.S))
-            {
-                m_MovementInputValue = Input.GetAxis(m_MovementAxisName);
-            }
-
-            if (Input.GetKey(KeyCode.A))
-            {
-                m_TurnInputValue = Input.GetAxis(m_TurnAxisName);
-            }
-            else if (Input.GetKeyUp(KeyCode.A))
-            {
-                m_TurnInputValue = Input.GetAxis(m_TurnAxisName);
-            }
-
-            if (Input.GetKey(KeyCode.D))
-            {
-                m_TurnInputValue = Input.GetAxis(m_TurnAxisName);
-            }
-            else if (Input.GetKeyUp(KeyCode.D))
-            {
-                m_TurnInputValue = Input.GetAxis(m_TurnAxisName);
-            }
-            Debug.Log(m_MovementInputValue); // TODO: remove
+            GatherInput();
         }
 
 
@@ -125,6 +98,77 @@ namespace Complete
 
             // Apply this rotation to the rigidbody's rotation.
             m_Rigidbody.MoveRotation(m_Rigidbody.rotation * turnRotation);
+        }
+
+        void GatherInput()
+        {
+            if (Input.GetKeyDown(KeyCode.W))
+            {
+                if (keyW.keyDown)
+                {
+                    keyW.keyDown = false;
+                    keyW.keyRepeat = true;
+                }
+                else
+                    keyW.keyDown = true;
+            }
+            else if (Input.GetKeyUp(KeyCode.W))
+            {
+                keyW.keyDown = false;
+                keyW.keyRepeat = false;
+                keyW.keyUp = true;
+            }
+
+            if (Input.GetKeyDown(KeyCode.S))
+            {
+                if (keyS.keyDown)
+                {
+                    keyS.keyDown = false;
+                    keyS.keyRepeat = true;
+                }
+                else
+                    keyS.keyDown = true;
+            }
+            else if (Input.GetKeyUp(KeyCode.S))
+            {
+                keyS.keyDown = false;
+                keyS.keyRepeat = false;
+                keyS.keyUp = true;
+            }
+
+            if (Input.GetKeyDown(KeyCode.A))
+            {
+                if (keyA.keyDown)
+                {
+                    keyA.keyDown = false;
+                    keyA.keyRepeat = true;
+                }
+                else
+                    keyA.keyDown = true;
+            }
+            else if (Input.GetKeyUp(KeyCode.A))
+            {
+                keyA.keyDown = false;
+                keyA.keyRepeat = false;
+                keyA.keyUp = true;
+            }
+
+            if (Input.GetKeyDown(KeyCode.D))
+            {
+                if (keyD.keyDown)
+                {
+                    keyD.keyDown = false;
+                    keyD.keyRepeat = true;
+                }
+                else
+                    keyD.keyDown = true;
+            }
+            else if (Input.GetKeyUp(KeyCode.D))
+            {
+                keyD.keyDown = false;
+                keyD.keyRepeat = false;
+                keyD.keyUp = true;
+            }
         }
     }
 }
