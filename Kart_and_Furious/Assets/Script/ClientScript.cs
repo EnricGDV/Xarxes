@@ -29,6 +29,7 @@ public class ClientScript : MonoBehaviour
     private bool isTimeoutTriggered;                // TODO: change for something better
     private bool isDisconnectTriggered;             // TODO: change for something better
     private KartMovement kartScript;
+    private int id;
 
     private enum ConnectionState
     {
@@ -42,6 +43,7 @@ public class ClientScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        gameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
         ipep = new IPEndPoint(IPAddress.Parse(tIPAddress), 2517); // TODO: This needs to be inputed
         server = ipep;
         newSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -49,7 +51,10 @@ public class ClientScript : MonoBehaviour
         isDisconnectTriggered = false;
         // TODO: move this when we can input an IP Address
         // {
-        SendMessageToServer("Hello!");
+        byte[] data;// = new byte[1024]; // (?)
+        data = Encoding.ASCII.GetBytes("Hello!");
+        newSocket.SendTo(data, data.Length, SocketFlags.None, server);
+
         connectionState = ConnectionState.STATE_HELLO;
         helloThread = new Thread(AwaitWelcome);
         helloThread.Start();
@@ -73,7 +78,10 @@ public class ClientScript : MonoBehaviour
                     // Hello! msg sent as soon as the socket is created
                     if (Input.GetKeyDown(KeyCode.Space))
                     {
-                        SendMessageToServer("Hello!");
+                        byte[] data;// = new byte[1024]; // (?)
+                        data = Encoding.ASCII.GetBytes("Hello!");
+                        newSocket.SendTo(data, data.Length, SocketFlags.None, server);
+
                         connectionState = ConnectionState.STATE_HELLO;
                         helloThread = new Thread(AwaitWelcome);
                         helloThread.Start();
@@ -100,6 +108,9 @@ public class ClientScript : MonoBehaviour
                 }
             case ConnectionState.STATE_CONNECTED:
                 {
+                    if (kartScript == null)
+                        kartScript = gameObject.GetComponentInChildren<KartMovement>();
+
                     // Thread awaiting messages from server (Pings!) constantly (different thread for pings (?))
                     DateTime now = System.DateTime.UtcNow;
                     if ((now - lastPing) > TimeSpan.FromSeconds(5))
@@ -136,13 +147,14 @@ public class ClientScript : MonoBehaviour
                 recv = newSocket.ReceiveFrom(data, ref server);
                 string text = Encoding.ASCII.GetString(data, 0, recv);
 
-                if (text == "Welcome!")
+                if (text.Contains("Welcome!"))
                 {
                     connectionState = ConnectionState.STATE_CONNECTED;
                     msgThread = new Thread(AwaitMsg);
                     msgThread.Start();
-                    // Create Kart function here
-                    gameObject.GetComponent<KartMovement>();
+                    //gameManager.AddKart(id); // TODO: Check!!!
+                    string idString = text.Substring(8, 1);
+                    id = int.Parse(idString);
                 }
             }
             catch (System.Exception e)
@@ -213,7 +225,7 @@ public class ClientScript : MonoBehaviour
     public void SendMessageToServer(string message)
     {
         byte[] data;// = new byte[1024]; // (?)
-        data = Encoding.ASCII.GetBytes(message);
+        data = Encoding.ASCII.GetBytes(message + id);
         newSocket.SendTo(data, data.Length, SocketFlags.None, server);
     }
     public string GetLocalIPv4()
@@ -226,7 +238,10 @@ public class ClientScript : MonoBehaviour
         if (kartScript == null)
             return;
 
-        switch (input)
+        string command = input.Remove(input.Length - 1);
+        int kartId = int.Parse(input[input.Length - 1].ToString());
+        // TODO: Access the GameManager's PUBLIC list of cars and change that car's inputs
+        switch (command)
         {
             case "KeyDownW":
                 {

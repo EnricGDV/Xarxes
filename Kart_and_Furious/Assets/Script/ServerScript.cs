@@ -28,16 +28,17 @@ public class ServerScript : MonoBehaviour // AKA: Server
     }
     public class Player
     {
-        public string playerName; 
-        public EndPoint endPoint;
+        public string playerName;
+        public int id;
+        private EndPoint endPoint;
         public ConnectionState connectionState = ConnectionState.STATE_DISCONNECTED;
         public DateTime lastPing;
 
-        public Player(EndPoint ep) { endPoint = ep; }
+        public Player(EndPoint ep, int id) { endPoint = ep; this.id = id; }
         public EndPoint GetEndPoint() { return endPoint; }
     }
 
-    void Start() 
+    private void Awake()
     {
         playerIt = 1;
 
@@ -49,7 +50,10 @@ public class ServerScript : MonoBehaviour // AKA: Server
 
         msgThread = new Thread(AwaitMsg);
         msgThread.Start();
+    }
 
+    void Start() 
+    {
         pingThread = new Thread(Ping);
         pingThread.Start();
     }
@@ -70,7 +74,7 @@ public class ServerScript : MonoBehaviour // AKA: Server
             else if (playerList[i].connectionState == ConnectionState.STATE_HELLO)
             {
                 playerList[i].connectionState = ConnectionState.STATE_CONNECTED;
-                SendMessageToClients("Welcome!", playerList[i]);
+                SendMessageToClients("Welcome!" + playerList[i].id.ToString(), playerList[i]);
                 playerList[i].lastPing = DateTime.UtcNow;
             }
         }
@@ -98,7 +102,7 @@ public class ServerScript : MonoBehaviour // AKA: Server
                 recv = newSocket.ReceiveFrom(data, ref ep);
                 string text = Encoding.ASCII.GetString(data, 0, recv);
 
-                if (text == "Ping!")
+                if (text.Contains("Ping!"))
                 {
                     Player player = FindPlayerFromClient(ep);
                     player.lastPing = DateTime.UtcNow;
@@ -108,11 +112,12 @@ public class ServerScript : MonoBehaviour // AKA: Server
                         Debug.Log(player.playerName + " reconnected!");
                     }
                 }
-                else if (text == "Hello!")
+                else if (text == "Hello!") // This is the only one that can use ==
                 {
-                    AddPlayer(ep);
+                    AddPlayer(ep, playerIt);
+                    playerIt++;
                 }
-                else if (text == "Goodbye!")
+                else if (text.Contains("Goodbye!"))
                 {
                     Player player = FindPlayerFromClient(ep);
 
@@ -170,11 +175,11 @@ public class ServerScript : MonoBehaviour // AKA: Server
     }
 
     // Adds a player, lol
-    private void AddPlayer(EndPoint ep)
+    private void AddPlayer(EndPoint ep, int id)
     {
-        Player newPlayer = new Player(ep);
+        Player newPlayer = new Player(ep, id);
         playerList.Add(newPlayer);
-        newPlayer.playerName = "New Player " + playerIt.ToString(); playerIt++;
+        newPlayer.playerName = "New Player " + id.ToString();
         newPlayer.connectionState = ConnectionState.STATE_HELLO;
     }
 
