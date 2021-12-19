@@ -100,12 +100,12 @@ public class ServerScript : MonoBehaviour // AKA: Server
 
                 if (text == "Ping!")
                 {
-                    Player newPlayer = FindPlayerFromClient(ep);
-                    newPlayer.lastPing = DateTime.UtcNow;
-                    if (newPlayer.connectionState == ConnectionState.STATE_DISCONNECTED)
+                    Player player = FindPlayerFromClient(ep);
+                    player.lastPing = DateTime.UtcNow;
+                    if (player.connectionState == ConnectionState.STATE_DISCONNECTED)
                     {
-                        newPlayer.connectionState = ConnectionState.STATE_CONNECTED;
-                        Debug.Log(newPlayer.playerName + " reconnected!");
+                        player.connectionState = ConnectionState.STATE_CONNECTED;
+                        Debug.Log(player.playerName + " reconnected!");
                     }
                 }
                 else if (text == "Hello!")
@@ -114,17 +114,21 @@ public class ServerScript : MonoBehaviour // AKA: Server
                 }
                 else if (text == "Goodbye!")
                 {
-                    Player newPlayer = FindPlayerFromClient(ep);
+                    Player player = FindPlayerFromClient(ep);
 
-                    if (newPlayer != null)
+                    if (player != null)
                     {
-                        Debug.Log(newPlayer.playerName + " disconnected!");
-                        playerList.Remove(newPlayer);
+                        Debug.Log(player.playerName + " disconnected!");
+                        playerList.Remove(player);
                     }
                 }
                 else if (text.Contains("Key"))
                 {
-                    SendMessageToClients(text);
+                    Player player = FindPlayerFromClient(ep);
+                    if (player != null)
+                    {
+                        SendMessageToClients(text, player);
+                    }
                 }
             }
             catch (System.Exception e)
