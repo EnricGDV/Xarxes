@@ -10,6 +10,9 @@ public class CameraScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (target == null)
+            return;
+
         gameObject.transform.position = new Vector3(target.transform.position.x - distance.x, target.transform.position.y + distance.y, target.transform.position.z + distance.z);
         gameObject.transform.LookAt(target.transform.position);
     }
@@ -17,6 +20,9 @@ public class CameraScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (target == null)
+            return;
+
         Vector3 newPos = new Vector3(target.transform.position.x - distance.x, target.transform.position.y + distance.y, target.transform.position.z + distance.z);
         Quaternion newRot = Quaternion.LookRotation(target.transform.position - transform.position);
 

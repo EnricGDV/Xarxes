@@ -40,7 +40,7 @@ public class ServerScript : MonoBehaviour // AKA: Server
 
     private void Awake()
     {
-        playerIt = 1;
+        playerIt = 1; // TODO: I know it's not ideal but :/
 
         localIPAddress = GetLocalIPv4();
 
@@ -74,14 +74,14 @@ public class ServerScript : MonoBehaviour // AKA: Server
             else if (playerList[i].connectionState == ConnectionState.STATE_HELLO)
             {
                 playerList[i].connectionState = ConnectionState.STATE_CONNECTED;
-                SendMessageToClients("Welcome!" + playerList[i].id.ToString(), playerList[i]);
+                SendMessageToClients("Welcome!" + playerList[i].id.ToString()/*, playerList[i]*/);
                 playerList[i].lastPing = DateTime.UtcNow;
             }
         }
         if (Input.GetKeyDown(KeyCode.B)) // TODO: remove this
         {
             if (playerList.Count > 0)
-                SendMessageToClients("B key pressed", playerList[0]);
+                SendMessageToClients("B key pressed");
         }
         else if (Input.GetKeyDown(KeyCode.N)) // TODO: remove this
         {
@@ -131,11 +131,12 @@ public class ServerScript : MonoBehaviour // AKA: Server
                 }
                 else if (text.Contains("Key"))
                 {
-                    Player player = FindPlayerFromClient(ep);
-                    if (player != null)
-                    {
-                        SendMessageToClients(text, player);
-                    }
+                    SendMessageToClients(text);
+                    //Player player = FindPlayerFromClient(ep);
+                    //if (player != null)
+                    //{
+                    //    SendMessageToClients(text, player);
+                    //}
                 }
             }
             catch (System.Exception e)
@@ -174,6 +175,9 @@ public class ServerScript : MonoBehaviour // AKA: Server
         }
         else if (onlySendTo.connectionState == ConnectionState.STATE_CONNECTED) 
             newSocket.SendTo(data, data.Length, SocketFlags.None, onlySendTo.GetEndPoint());
+
+        if (message != "Ping!")
+            Debug.Log(message);
     }
 
     // Adds a player, lol

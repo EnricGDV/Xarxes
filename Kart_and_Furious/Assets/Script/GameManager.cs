@@ -15,8 +15,6 @@ public class GameManager : MonoBehaviour
 
     public bool kartNeeded = false;
 
-    private List<GameObject> kartObjects;
-
     private void Start()
     {
 
@@ -24,33 +22,57 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if(kartNeeded)
+        if (kartNeeded)
         {
             kartNeeded = false;
             AddKart(kartID);
-        } 
+        }
 
-        if(laps == maxLaps+1)
+        if (laps == maxLaps + 1)
         {
             Debug.Log("Race Finished!!");
         }
     }
 
 
-    public void AddKart(int id)
+    public void AddKart(int id, bool isMainKart = true)
     {
-        GameObject newPlayer = GameObject.Find("Client");
-        GameObject newKart = Instantiate(kartPrefab, newPlayer.transform);
-        newKart.name = "Kart " + id;
-        newKart.transform.position = new Vector3(initialCoords.position.x - 0.8f * id, initialCoords.position.y, initialCoords.position.z - 0.6f * (id%2-1));
-        camera.GetComponent<CameraScript>().target = newKart;
-        kartsList.Add(newKart.GetComponent<KartMovement>());
-        kartObjects.Add(newKart);     
+        if (id == 1)
+        {
+            GameObject newPlayer = GameObject.Find("Client");
+            GameObject newKart = Instantiate(kartPrefab, newPlayer.transform);
+            newKart.name = "Kart " + id;
+            newKart.transform.position = new Vector3(initialCoords.position.x - 0.8f * id, initialCoords.position.y, initialCoords.position.z - 0.6f * (id % 2 - 1));
+            camera.GetComponent<CameraScript>().target = newKart;
+            kartsList.Add(newKart.GetComponent<KartMovement>());
+        }
+        else if (kartsList.Count > 0)
+        {
+            if (kartsList[id - 2] != null)
+            {
+                GameObject newPlayer = GameObject.Find("Client");
+                GameObject newKart = Instantiate(kartPrefab, newPlayer.transform);
+                newKart.name = "Kart " + id;
+                newKart.transform.position = new Vector3(initialCoords.position.x - 0.8f * id, initialCoords.position.y, initialCoords.position.z - 0.6f * (id % 2 - 1));
+
+                if (isMainKart)
+                    camera.GetComponent<CameraScript>().target = newKart;
+
+                kartsList.Add(newKart.GetComponent<KartMovement>());
+            }
+        }
+        else // This is so if a client joins a game with existing clients he will create karts for those clients as well
+        {
+            for (int i = 0; i < id; i++)
+            {
+                AddKart(i + 1);
+            }
+        }
     }
 
     public void AddLap(int kartnum)
     {
         laps++;
-        Debug.Log("Kart " + kartnum + " has completed " + (laps-1) + "/" + maxLaps + " laps!");
+        Debug.Log("Kart " + kartnum + " has completed " + (laps - 1) + "/" + maxLaps + " laps!");
     }
 }

@@ -22,11 +22,14 @@ public class ClientScript : MonoBehaviour
     private Thread msgThread;
     private GameManager gameManager;
     private MemoryStream stream;
-    static string tIPAddress = "127.0.0.1";      // TODO: remove when we have input
+    static string localIPAddress = "127.0.0.1";      // TODO: remove when we have input
     private bool isTimeoutTriggered;                // TODO: change for something better
     private bool isDisconnectTriggered;             // TODO: change for something better
     private KartMovement kartScript;
     private int id;
+    private bool isPlayerCreated;
+    private bool isNewClientCreated;
+    private int newClientID;
 
     private enum ConnectionState
     {
@@ -41,11 +44,13 @@ public class ClientScript : MonoBehaviour
     void Start()
     {
         gameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
-        ipep = new IPEndPoint(IPAddress.Parse(tIPAddress), 2517); // TODO: This needs to be inputed
+        ipep = new IPEndPoint(IPAddress.Parse(localIPAddress), 2517); // TODO: This needs to be inputed
         server = ipep;
         newSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         isTimeoutTriggered = false;
         isDisconnectTriggered = false;
+        isPlayerCreated = false;
+        isNewClientCreated = false;
         // TODO: move this when we can input an IP Address
         // {
         byte[] data;// = new byte[1024]; // (?)
@@ -57,9 +62,6 @@ public class ClientScript : MonoBehaviour
         helloThread.Start();
         timeOutThread = new Thread(Timeout);
         timeOutThread.Start();
-        pingThread = new Thread(Ping);
-        pingThread.Start();
-        lastPing = DateTime.UtcNow;
         // }
 
     }
@@ -67,27 +69,12 @@ public class ClientScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        switch (connectionState)
+        switch (connectionState) // Thiis isn't game state! Only state of the connection
         {
             case ConnectionState.STATE_DISCONNECTED:
                 {
                     // Socket creation on IPAddress input
                     // Hello! msg sent as soon as the socket is created
-                    if (Input.GetKeyDown(KeyCode.Space))
-                    {
-                        byte[] data;// = new byte[1024]; // (?)
-                        data = Encoding.ASCII.GetBytes("Hello!");
-                        newSocket.SendTo(data, data.Length, SocketFlags.None, server);
-
-                        connectionState = ConnectionState.STATE_HELLO;
-                        helloThread = new Thread(AwaitWelcome);
-                        helloThread.Start();
-                        timeOutThread = new Thread(Timeout);
-                        timeOutThread.Start();
-                        pingThread = new Thread(Ping);
-                        pingThread.Start();
-                        lastPing = DateTime.UtcNow;
-                    }
                     return;
                 }
             case ConnectionState.STATE_HELLO:
@@ -105,6 +92,17 @@ public class ClientScript : MonoBehaviour
                 }
             case ConnectionState.STATE_CONNECTED:
                 {
+                    if (!isPlayerCreated)
+                    {
+                        isPlayerCreated = true;
+                        gameManager.AddKart(id);
+                    }
+                    else if (isNewClientCreated)
+                    {
+                        isNewClientCreated = false;
+                        gameManager.AddKart(newClientID, false);
+                    }
+
                     if (kartScript == null)
                         kartScript = gameObject.GetComponentInChildren<KartMovement>();
 
@@ -138,27 +136,30 @@ public class ClientScript : MonoBehaviour
         Debug.Log("Starting client thread! Awaiting welcome from server...");
         while (connectionState == ConnectionState.STATE_HELLO)
         {
+            byte[] data = new byte[1024];
+
             try
             {
-                byte[] data = new byte[1024];
                 recv = newSocket.ReceiveFrom(data, ref server);
-                string text = Encoding.ASCII.GetString(data, 0, recv);
-
-                if (text.Contains("Welcome!"))
-                {
-                    connectionState = ConnectionState.STATE_CONNECTED;
-                    msgThread = new Thread(AwaitMsg);
-                    msgThread.Start();
-                    gameManager.kartNeeded = true; 
-                    string idString = text.Substring(8, 1);
-                    id = int.Parse(idString);
-                    gameManager.kartID = id;
-                }
             }
             catch (System.Exception e)
             {
                 Debug.LogWarning(e);
                 throw e;
+            }
+
+            string text = Encoding.ASCII.GetString(data, 0, recv);
+            if (text.Contains("Welcome!"))
+            {
+                connectionState = ConnectionState.STATE_CONNECTED;
+                msgThread = new Thread(AwaitMsg);
+                msgThread.Start();
+                pingThread = new Thread(Ping);
+                pingThread.Start();
+                lastPing = DateTime.UtcNow;
+
+                string idString = text.Substring(8, 1);
+                id = int.Parse(idString); // We get the id
             }
         }
         Debug.Log("Welcome received. Stopping client thread!");
@@ -166,32 +167,44 @@ public class ClientScript : MonoBehaviour
 
     void AwaitMsg()
     {
+        Thread.Sleep(100);
         Debug.Log("Starting client thread! Awaiting messages from server...");
         while (!isDisconnectTriggered)  // TODO: maybe this isn't ideal (?)
         {
+            byte[] data = new byte[1024];
             try
             {
-                byte[] data = new byte[1024];
                 recv = newSocket.ReceiveFrom(data, ref server);
-                string text = Encoding.ASCII.GetString(data, 0, recv);
-
-                if (text == "Ping!")
-                {
-                    lastPing = System.DateTime.UtcNow;
-                }
-                else if (text == "Disconnect!")
-                {
-                    isDisconnectTriggered = true;
-                }
-                else if (text.Contains("Key"))
-                {
-                    GetInput(text);
-                }
             }
             catch (System.Exception e)
             {
                 Debug.LogWarning(e);
                 throw e;
+            }
+
+            string text = Encoding.ASCII.GetString(data, 0, recv);
+            if (text == "Ping!")
+            {
+                lastPing = System.DateTime.UtcNow;
+            }
+            else if (text == "Disconnect!") // TODO: remove, this was just for testing
+            {
+                isDisconnectTriggered = true;
+            }
+
+            else if (text.Contains("Welcome!"))
+            {
+                string idString = text.Substring(8, 1);
+                int newClientID = int.Parse(idString); // We get the id
+                if (id != newClientID)
+                {
+                    isNewClientCreated = true;
+                    this.newClientID = newClientID;
+                }
+            }
+            else if (text.Contains("Key")) // TODO: Probably better to use flags to signalize if a msg is serialized or not
+            {
+                GetInput(text);
             }
         }
         Debug.Log("Disconnecting from server. Stopping client thread!");
@@ -212,8 +225,9 @@ public class ClientScript : MonoBehaviour
 
     void Ping()
     {
+        Thread.Sleep(100);
         Debug.Log("Starting ping thread!");
-        while (true) 
+        while (true)
         {
             SendMessageToServer("Ping!");
             Thread.Sleep(500);
@@ -226,16 +240,14 @@ public class ClientScript : MonoBehaviour
         data = Encoding.ASCII.GetBytes(message + id);
         newSocket.SendTo(data, data.Length, SocketFlags.None, server);
     }
+
     public string GetLocalIPv4()
     {
         return Dns.GetHostEntry(Dns.GetHostName()).AddressList.First(f => f.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToString();
     }
 
-    void GetInput(string input)
+    void GetInput(string input) // TODO: Separate into 2 funcs: one to extract the inputs and another, off thread, to send them
     {
-        if (kartScript == null)
-            return;
-
         string command = input.Remove(input.Length - 1);
         int kartId = int.Parse(input[input.Length - 1].ToString());
         KartMovement kMov = gameManager.kartsList[kartId - 1];
@@ -290,7 +302,7 @@ public class ClientScript : MonoBehaviour
     }
 
     // TODO: make sure this is needed
-    private void OnDestroy() 
+    private void OnDestroy()
     {
         if (helloThread != null)
             helloThread.Abort();
@@ -304,10 +316,5 @@ public class ClientScript : MonoBehaviour
     private void OnDisable() // Debug use
     {
         pingThread.Abort();
-    }
-    private void OnEnable()
-    {
-        pingThread = new Thread(Ping);
-        pingThread.Start();
     }
 }
