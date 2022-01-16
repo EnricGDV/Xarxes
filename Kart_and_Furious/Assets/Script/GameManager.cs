@@ -1,78 +1,117 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using Complete;
+
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-public class GameManager : MonoBehaviour
+
+using Photon.Pun;
+using Photon.Realtime;
+
+
+public class GameManager : MonoBehaviourPunCallbacks
 {
-    public GameObject kartPrefab;
-    public Transform initialCoords;
-    public GameObject camera;
-    public int maxLaps = 1;
-    private int laps = 0;
-    public List<KartMovement> kartsList;
-    public int kartID = 1;
 
-    public bool kartNeeded = false;
 
-    private void Start()
+    #region Public Fields
+
+    [Tooltip("The prefab to use for representing the player")]
+    public GameObject playerPrefab;
+
+    #endregion
+
+    #region MonoBehavior Callbacks
+
+    /// MonoBehaviour method called on GameObject by Unity during initialization phase.
+    public void Start()
     {
-
-    }
-
-    private void Update()
-    {
-        if (kartNeeded)
+        if (playerPrefab == null)
         {
-            kartNeeded = false;
-            AddKart(kartID);
+            Debug.LogError("<Color=Red><a>Missing</a></Color> playerPrefab Reference. Please set it up in GameObject 'Game Manager'", this);
         }
-
-        if (laps == maxLaps + 1)
+        else
         {
-            Debug.Log("Race Finished!!");
-        }
-    }
-
-
-    public void AddKart(int id, bool isMainKart = true)
-    {
-        if (id == 1)
-        {
-            GameObject newPlayer = GameObject.Find("Client");
-            GameObject newKart = Instantiate(kartPrefab, newPlayer.transform);
-            newKart.name = "Kart " + id;
-            newKart.transform.position = new Vector3(initialCoords.position.x - 0.8f * id, initialCoords.position.y, initialCoords.position.z - 0.6f * (id % 2 - 1));
-            camera.GetComponent<CameraScript>().target = newKart;
-            kartsList.Add(newKart.GetComponent<KartMovement>());
-        }
-        else if (kartsList.Count > 0)
-        {
-            if (kartsList[id - 2] != null)
+            if (PlayerManager.LocalPlayerInstance == null)
             {
-                GameObject newPlayer = GameObject.Find("Client");
-                GameObject newKart = Instantiate(kartPrefab, newPlayer.transform);
-                newKart.name = "Kart " + id;
-                newKart.transform.position = new Vector3(initialCoords.position.x - 0.8f * id, initialCoords.position.y, initialCoords.position.z - 0.6f * (id % 2 - 1));
-
-                if (isMainKart)
-                    camera.GetComponent<CameraScript>().target = newKart;
-
-                kartsList.Add(newKart.GetComponent<KartMovement>());
+                Debug.LogFormat("We are Instantiating LocalPlayer from {0}", SceneManagerHelper.ActiveSceneName);
+                // we're in a room. spawn a character for the local player. it gets synced by using PhotonNetwork.Instantiate
+                PhotonNetwork.Instantiate(this.playerPrefab.name, new Vector3(0f, 5f, 0f), Quaternion.identity, 0);
+                
             }
-        }
-        else // This is so if a client joins a game with existing clients he will create karts for those clients as well
-        {
-            for (int i = 0; i < id; i++)
+            else
             {
-                AddKart(i + 1);
+                Debug.LogFormat("Ignoring scene load for {0}", SceneManagerHelper.ActiveSceneName);
             }
         }
     }
 
-    public void AddLap(int kartnum)
+    #endregion
+
+
+    #region Photon Callbacks
+
+    public override void OnPlayerEnteredRoom(Player other)
     {
-        laps++;
-        Debug.Log("Kart " + kartnum + " has completed " + (laps - 1) + "/" + maxLaps + " laps!");
+        Debug.LogFormat("OnPlayerEnteredRoom() {0}", other.NickName); // not seen if you're the player connecting
+
+
+        if (PhotonNetwork.IsMasterClient)
+        {
+            Debug.LogFormat("OnPlayerEnteredRoom IsMasterClient {0}", PhotonNetwork.IsMasterClient); // called before OnPlayerLeftRoom
+
+
+            //LoadArena();
+        }
     }
+
+    public override void OnPlayerLeftRoom(Player other)
+    {
+        Debug.LogFormat("OnPlayerLeftRoom() {0}", other.NickName); // seen when other disconnects
+
+
+        if (PhotonNetwork.IsMasterClient)
+        {
+            Debug.LogFormat("OnPlayerLeftRoom IsMasterClient {0}", PhotonNetwork.IsMasterClient); // called before OnPlayerLeftRoom
+
+
+            //LoadArena();
+        }
+    }
+
+    /// Called when the local player left the room. We need to load the launcher scene.
+    public override void OnLeftRoom()
+    {
+        SceneManager.LoadScene(0);
+    }
+
+    #endregion
+
+
+    #region Private Methods
+
+    void LoadArena()
+    {
+        if (!PhotonNetwork.IsMasterClient)
+        {
+            Debug.LogError("PhotonNetwork : Trying to Load a level but we are not the master Client");
+        }
+        Debug.LogFormat("Loading Level : {0}", PhotonNetwork.CurrentRoom.Name);
+        PhotonNetwork.LoadLevel("Racing Room");
+    }
+
+    #endregion
+
+
+    #region Public Methods
+
+
+    public void LeaveRoom()
+    {
+        PhotonNetwork.LeaveRoom();
+    }
+
+    #endregion
+
 }
+
